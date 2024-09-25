@@ -30,11 +30,19 @@ func New(conf *conf.DBConfig) *Repository {
 		zap.L().Fatal("panic occurred", zap.Any("error", err))
 	}
 
-	if err = conn.AutoMigrate(); err != nil {
+	if err = conn.AutoMigrate(
+		&model.Item{},
+		&model.ItemMedia{},
+		&model.ItemAttribute{},
+		&model.RelatedProduct{},
+		&model.Category{},
+		&model.Filter{},
+		&model.Promotion{},
+		&model.PromotionItem{},
+		&model.Favorite{},
+	); err != nil {
 		zap.L().Fatal("panic occurred", zap.Any("error", err))
 	}
-
-	model.MustPrecreateUsers(conn)
-
+	
 	return &Repository{conn: conn}
 }

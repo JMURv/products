@@ -36,7 +36,7 @@ func (c *Controller) ListFavorites(ctx context.Context, uid uuid.UUID) ([]*model
 	res, err := c.repo.GetFavorites(ctx, uid)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		zap.L().Debug("failed to find favorites", zap.Error(err), zap.String("op", op))
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to get favorites", zap.Error(err), zap.String("op", op))
 		return nil, err
@@ -59,10 +59,10 @@ func (c *Controller) AddToFavorites(ctx context.Context, uid uuid.UUID, itemID u
 
 	res, err := c.repo.AddToFavorites(ctx, uid, itemID)
 	if err != nil && errors.Is(err, repo.ErrAlreadyExists) {
-		return nil, repo.ErrAlreadyExists
+		return nil, ErrAlreadyExists
 	} else if err != nil && errors.Is(err, repo.ErrNotFound) {
 		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to add to favorites", zap.Error(err), zap.String("op", op))
 		return nil, err
@@ -84,7 +84,7 @@ func (c *Controller) RemoveFromFavorites(ctx context.Context, uid uuid.UUID, ite
 	err := c.repo.RemoveFromFavorites(ctx, uid, itemID)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
-		return repo.ErrNotFound
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to remove from favorites", zap.Error(err), zap.String("op", op))
 		return err

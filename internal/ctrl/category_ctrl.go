@@ -188,6 +188,7 @@ func (c *Controller) CreateCategory(ctx context.Context, category *model.Categor
 		return nil, err
 	}
 
+	// TODO: Call banner mcrsvc
 	category.Banner.CategorySlug = &category.Slug
 	banner, err := c.CreateBanner(ctx, &category.Banner)
 	if err != nil {
@@ -224,6 +225,7 @@ func (c *Controller) UpdateCategory(ctx context.Context, slug string, category *
 		return nil, err
 	}
 
+	// TODO: Call SEO and Banner mcrsvc
 	seo, err := c.UpdateCategorySEO(ctx, slug, &category.SEO)
 	if err != nil {
 		zap.L().Debug("failed to update category seo", zap.Error(err), zap.String("op", op))

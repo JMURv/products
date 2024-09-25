@@ -1,12 +1,7 @@
 package model
 
 import (
-	"github.com/JMURv/par-pro/products/pkg/utils/slugify"
-	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-	"os"
 	"time"
 )
 
@@ -34,43 +29,4 @@ type PromotionItem struct {
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
-}
-
-func MustPrecreatePromotion(conn *gorm.DB) {
-	var count int64
-	if err := conn.Model(&Promotion{}).Count(&count).Error; err != nil {
-		panic(err)
-	}
-
-	if count == 0 {
-		bytes, err := os.ReadFile("db/precreate/promotions.json")
-		if err != nil {
-			panic(err)
-		}
-
-		promos := make([]*Promotion, 0, 4)
-		if err = json.Unmarshal(bytes, &promos); err != nil {
-			panic(err)
-		}
-
-		for _, v := range promos {
-			slug := slugify.Slugify(v.Title)
-			promo := &Promotion{
-				Slug:           slug,
-				Title:          v.Title,
-				Description:    v.Description,
-				Src:            v.Src,
-				Alt:            v.Alt,
-				LastsTo:        time.Now().AddDate(0, 0, 7),
-				PromotionItems: v.PromotionItems,
-			}
-			if err = conn.Create(promo).Error; err != nil {
-				panic(err)
-			}
-		}
-
-		zap.L().Debug("Promotions have been created")
-	} else {
-		zap.L().Debug("Promotions already exist")
-	}
 }

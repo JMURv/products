@@ -21,10 +21,10 @@ type Handler struct {
 	pb.PromotionServer
 	pb.FavoriteServer
 	srv  *grpc.Server
-	ctrl ctrl.Controller
+	ctrl *ctrl.Controller
 }
 
-func New(ctrl ctrl.Controller) *Handler {
+func New(ctrl *ctrl.Controller) *Handler {
 	srv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			metrics.SrvMetrics.UnaryServerInterceptor(pm.WithExemplarFromContext(metrics.Exemplar)),

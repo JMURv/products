@@ -15,7 +15,7 @@ type ErrorResponse struct {
 }
 
 type PaginatedData struct {
-	Data        []any `json:"data"`
+	Data        any   `json:"data"`
 	Count       int64 `json:"count"`
 	TotalPages  int   `json:"total_pages"`
 	CurrentPage int   `json:"current_page"`

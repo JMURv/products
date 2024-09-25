@@ -133,7 +133,7 @@ func (c *Controller) GetPromotion(ctx context.Context, slug string) (*model.Prom
 	res, err := c.repo.GetPromotion(ctx, slug)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		zap.L().Debug("failed to find promotion", zap.Error(err), zap.String("op", op))
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to get promotion", zap.Error(err), zap.String("op", op))
 		return nil, err
@@ -156,6 +156,7 @@ func (c *Controller) CreatePromotion(ctx context.Context, p *model.Promotion) (*
 
 	p.Slug = slugify.Slugify(p.Title)
 
+	// TODO: call mcrsvc
 	p.Banner.PromotionSlug = &p.Slug
 	p.SEO.PromotionSlug = &p.Slug
 	res, err := c.repo.CreatePromotion(ctx, p)
@@ -182,24 +183,27 @@ func (c *Controller) UpdatePromotion(ctx context.Context, slug string, p *model.
 
 	res, err := c.repo.UpdatePromotion(ctx, slug, p)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, repo.ErrNotFound
+		zap.L().Debug("failed to find promotion", zap.Error(err), zap.String("op", op))
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update promotion", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
+	// TODO: call mcrsvc
 	banner, err := c.UpdateBannerByPromoSlug(ctx, res.Slug, &p.Banner)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update promotion banner", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 	res.Banner = *banner
 
+	// TODO: call mcrsvc
 	seo, err := c.UpdatePromotionSEO(ctx, res.Slug, &p.SEO)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update promotion SEO", zap.Error(err), zap.String("op", op))
 		return nil, err
@@ -224,7 +228,8 @@ func (c *Controller) DeletePromotion(ctx context.Context, slug string) error {
 
 	err := c.repo.DeletePromotion(ctx, slug)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return repo.ErrNotFound
+		zap.L().Debug("failed to find promotion", zap.Error(err), zap.String("op", op))
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to delete promotion", zap.Error(err), zap.String("op", op))
 		return err

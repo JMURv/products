@@ -1,4 +1,4 @@
-package utils
+package mapper
 
 import (
 	pb "github.com/JMURv/par-pro/products/api/pb"
@@ -32,7 +32,6 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 		ParentItemId:    req.ParentItemID.String(),
 		Media:           ListItemMediaToProto(req.Media),
 		Attributes:      ListItemAttributesToProto(req.Attributes),
-		RelatedProducts: ListRelatedProductsToProto(req.RelatedProducts),
 		CreatedAt: &timestamppb.Timestamp{
 			Seconds: req.CreatedAt.Unix(),
 			Nanos:   int32(req.CreatedAt.Nanosecond()),
@@ -41,6 +40,14 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 			Seconds: req.UpdatedAt.Unix(),
 			Nanos:   int32(req.UpdatedAt.Nanosecond()),
 		},
+	}
+
+	if len(req.RelatedProducts) > 0 {
+		res := make([]*pb.RelatedProduct, len(req.RelatedProducts))
+		for i, v := range req.RelatedProducts {
+			res[i] = RelatedProductsToProto(&v)
+		}
+		item.RelatedProducts = res
 	}
 
 	if len(req.Categories) > 0 {
@@ -62,10 +69,10 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 	return item
 }
 
-func ListRelatedProductsToProto(u []md.RelatedProduct) []*pb.RelatedProduct {
+func ListRelatedProductsToProto(u []*md.RelatedProduct) []*pb.RelatedProduct {
 	res := make([]*pb.RelatedProduct, len(u))
 	for i, v := range u {
-		res[i] = RelatedProductsToProto(&v)
+		res[i] = RelatedProductsToProto(v)
 	}
 	return res
 }
@@ -87,54 +94,46 @@ func RelatedProductsToProto(req *md.RelatedProduct) *pb.RelatedProduct {
 	}
 }
 
-func ListItemAttributesToProto(u []md.ItemAttribute) []*pb.ItemAttribute {
-	res := make([]*pb.ItemAttribute, len(u))
-	for i, v := range u {
-		res[i] = ItemAttributesToProto(&v)
+func ListItemAttributesToProto(req []md.ItemAttribute) []*pb.ItemAttribute {
+	res := make([]*pb.ItemAttribute, len(req))
+	for i, v := range req {
+		res[i] = &pb.ItemAttribute{
+			Id:     v.ID,
+			Name:   v.Name,
+			Value:  v.Value,
+			ItemId: v.ItemID.String(),
+			CreatedAt: &timestamppb.Timestamp{
+				Seconds: v.CreatedAt.Unix(),
+				Nanos:   int32(v.CreatedAt.Nanosecond()),
+			},
+			UpdatedAt: &timestamppb.Timestamp{
+				Seconds: v.UpdatedAt.Unix(),
+				Nanos:   int32(v.UpdatedAt.Nanosecond()),
+			},
+		}
 	}
 	return res
 }
 
-func ItemAttributesToProto(req *md.ItemAttribute) *pb.ItemAttribute {
-	return &pb.ItemAttribute{
-		Id:     req.ID,
-		Name:   req.Name,
-		Value:  req.Value,
-		ItemId: req.ItemID.String(),
-		CreatedAt: &timestamppb.Timestamp{
-			Seconds: req.CreatedAt.Unix(),
-			Nanos:   int32(req.CreatedAt.Nanosecond()),
-		},
-		UpdatedAt: &timestamppb.Timestamp{
-			Seconds: req.UpdatedAt.Unix(),
-			Nanos:   int32(req.UpdatedAt.Nanosecond()),
-		},
-	}
-}
-
-func ListItemMediaToProto(u []md.ItemMedia) []*pb.ItemMedia {
-	res := make([]*pb.ItemMedia, len(u))
-	for i, v := range u {
-		res[i] = ItemMediaToProto(&v)
+func ListItemMediaToProto(req []md.ItemMedia) []*pb.ItemMedia {
+	res := make([]*pb.ItemMedia, len(req))
+	for i, v := range req {
+		res[i] = &pb.ItemMedia{
+			Id:     v.ID,
+			Src:    v.Src,
+			Alt:    v.Alt,
+			ItemId: v.ItemID.String(),
+			CreatedAt: &timestamppb.Timestamp{
+				Seconds: v.CreatedAt.Unix(),
+				Nanos:   int32(v.CreatedAt.Nanosecond()),
+			},
+			UpdatedAt: &timestamppb.Timestamp{
+				Seconds: v.UpdatedAt.Unix(),
+				Nanos:   int32(v.UpdatedAt.Nanosecond()),
+			},
+		}
 	}
 	return res
-}
-
-func ItemMediaToProto(req *md.ItemMedia) *pb.ItemMedia {
-	return &pb.ItemMedia{
-		Id:     req.ID,
-		Src:    req.Src,
-		Alt:    req.Alt,
-		ItemId: req.ItemID.String(),
-		CreatedAt: &timestamppb.Timestamp{
-			Seconds: req.CreatedAt.Unix(),
-			Nanos:   int32(req.CreatedAt.Nanosecond()),
-		},
-		UpdatedAt: &timestamppb.Timestamp{
-			Seconds: req.UpdatedAt.Unix(),
-			Nanos:   int32(req.UpdatedAt.Nanosecond()),
-		},
-	}
 }
 
 func ItemFromProto(req *pb.ItemMsg) *md.Item {
@@ -242,106 +241,4 @@ func ItemFromProto(req *pb.ItemMsg) *md.Item {
 	}
 
 	return modelItem
-}
-
-func CategoryToProto(req *md.Category) *pb.CategoryMsg {
-	res := &pb.CategoryMsg{
-		Slug:               req.Slug,
-		Title:              req.Title,
-		ProductQuantity:    uint64(req.ProductQuantity),
-		Src:                req.Src,
-		Alt:                req.Alt,
-		ParentSlug:         *req.ParentSlug,
-		Parent_CategoryMsg: CategoryToProto(req.ParentCategory),
-		CreatedAt: &timestamppb.Timestamp{
-			Seconds: req.CreatedAt.Unix(),
-			Nanos:   int32(req.CreatedAt.Nanosecond()),
-		},
-		UpdatedAt: &timestamppb.Timestamp{
-			Seconds: req.UpdatedAt.Unix(),
-			Nanos:   int32(req.UpdatedAt.Nanosecond()),
-		},
-	}
-
-	if len(req.Children) > 0 {
-		for _, v := range req.Children {
-			res.Children = append(res.Children, CategoryToProto(&v))
-		}
-	}
-
-	if len(req.Items) > 0 {
-		for _, v := range req.Items {
-			res.Items = append(res.Items, ItemToProto(v))
-		}
-	}
-
-	if len(req.Filters) > 0 {
-		for _, v := range req.Filters {
-			res.Filters = append(res.Filters, &pb.Filter{
-				Id:           v.ID,
-				Name:         v.Name,
-				Values:       v.Values,
-				CategorySlug: v.CategorySlug,
-				FilterType:   v.FilterType,
-				MinValue:     float32(*v.MinValue),
-				MaxValue:     float32(*v.MaxValue),
-				CreatedAt: &timestamppb.Timestamp{
-					Seconds: v.CreatedAt.Unix(),
-					Nanos:   int32(v.CreatedAt.Nanosecond()),
-				},
-				UpdatedAt: &timestamppb.Timestamp{
-					Seconds: v.UpdatedAt.Unix(),
-					Nanos:   int32(v.UpdatedAt.Nanosecond()),
-				},
-			})
-		}
-	}
-
-	return res
-}
-
-func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
-	res := &md.Category{
-		Slug:            req.Slug,
-		Title:           req.Title,
-		ProductQuantity: int(req.ProductQuantity),
-		Src:             req.Src,
-		Alt:             req.Alt,
-		ParentSlug:      &req.ParentSlug,
-		ParentCategory:  CategoryFromProto(req.Parent_CategoryMsg),
-		CreatedAt:       req.CreatedAt.AsTime(),
-		UpdatedAt:       req.UpdatedAt.AsTime(),
-	}
-
-	if len(req.Children) > 0 {
-		for _, v := range req.Children {
-			res.Children = append(res.Children, *CategoryFromProto(v))
-		}
-	}
-
-	if len(req.Items) > 0 {
-		for _, v := range req.Items {
-			res.Items = append(res.Items, ItemFromProto(v))
-		}
-	}
-
-	if len(req.Filters) > 0 {
-		for _, v := range req.Filters {
-			minVal := float64(v.MinValue)
-			maxVal := float64(v.MaxValue)
-			res.Filters = append(res.Filters, md.Filter{
-				ID:           v.Id,
-				Name:         v.Name,
-				Values:       v.Values,
-				CategorySlug: v.CategorySlug,
-				FilterType:   v.FilterType,
-				MinValue:     &minVal,
-				MaxValue:     &maxVal,
-				CreatedAt:    v.CreatedAt.AsTime(),
-				UpdatedAt:    v.UpdatedAt.AsTime(),
-			})
-		}
-	}
-
-	return res
 }

@@ -1,6 +1,6 @@
 module github.com/JMURv/par-pro/products
 
-go 1.21.4
+go 1.23.1
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
@@ -27,6 +27,7 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/JMURv/protos v0.0.0-20240925210224-76a0e8370b17 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

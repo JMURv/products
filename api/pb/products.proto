@@ -112,7 +112,7 @@ service Item {
   rpc CreateItem(ItemMsg) returns (ItemMsg);
   rpc GetItem(uuidMsg) returns (ItemMsg);
   rpc UpdateItem(ItemWithUid) returns (ItemMsg);
-  rpc DeleteItem(uuidMsg) returns (ItemMsg);
+  rpc DeleteItem(uuidMsg) returns (Empty);
   rpc ListRelatedItems(uuidMsg) returns (RelatedItemsList);
   rpc listCategoryItems(listCategoryItemsReq) returns (PaginatedItemRes);
   rpc HitItems(ListReq) returns (PaginatedItemRes);
@@ -120,8 +120,8 @@ service Item {
 }
 
 message listCategoryItemsReq {
-  string page = 1;
-  string size = 2;
+  uint32 page = 1;
+  uint32 size = 2;
   string sort = 3;
   string category_slug = 4;
 }
@@ -251,6 +251,6 @@ message PaginatedPromoItemsRes {
 
 message ListPromotionItemsReq {
   string slug = 1;
-  string page = 2;
-  string size = 3;
+  uint32 page = 2;
+  uint32 size = 3;
 }

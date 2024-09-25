@@ -61,7 +61,10 @@ func (c *Controller) ListCategoryItems(ctx context.Context, slug string, page, s
 	}
 
 	res, err := c.repo.ListCategoryItems(ctx, slug, page, size, filters, sort)
-	if err != nil {
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		zap.L().Debug("failed to find category", zap.Error(err), zap.String("op", op))
+		return nil, err
+	} else if err != nil {
 		zap.L().Debug("failed to list category items", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
@@ -140,9 +143,10 @@ func (c *Controller) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*mo
 
 	res, err := c.repo.ListRelatedItems(ctx, uid)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		zap.L().Debug("failed to get related items", zap.Error(err), zap.String("op", op))
-		return nil, repo.ErrNotFound
+		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
+		return nil, ErrNotFound
 	} else if err != nil {
+		zap.L().Debug("failed to get related items", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
@@ -249,7 +253,7 @@ func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.I
 	res, err := c.repo.GetItemByUUID(ctx, uid)
 	if err != nil && err == repo.ErrNotFound {
 		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to get item", zap.Error(err), zap.String("op", op))
 		return nil, err
@@ -294,12 +298,13 @@ func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Ite
 
 	res, err := c.repo.UpdateItem(ctx, uid, i)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, repo.ErrNotFound
+		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update item", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
+	// TODO: Here call SEO mcrsvc
 	seo, err := c.UpdateItemSEO(ctx, uid, &i.SEO)
 	if err != nil {
 		zap.L().Debug("failed to update item SEO", zap.Error(err), zap.String("op", op))
@@ -324,7 +329,7 @@ func (c *Controller) DeleteItem(ctx context.Context, uid uuid.UUID) error {
 
 	err := c.repo.DeleteItem(ctx, uid)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return repo.ErrNotFound
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to delete item", zap.Error(err), zap.String("op", op))
 		return err

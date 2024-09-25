@@ -1,11 +1,7 @@
 package model
 
 import (
-	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-	"os"
 	"time"
 )
 
@@ -65,56 +61,4 @@ type RelatedProduct struct {
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
-}
-
-func MustPrecreateItems(conn *gorm.DB) {
-	var count int64
-	if err := conn.Model(&Item{}).Count(&count).Error; err != nil {
-		panic(err)
-	}
-
-	if count == 0 {
-		bytes, err := os.ReadFile("db/precreate/items.json")
-		if err != nil {
-			panic(err)
-		}
-
-		items := make([]*Item, 0, 2)
-		if err = json.Unmarshal(bytes, &items); err != nil {
-			panic(err)
-		}
-
-		for _, item := range items {
-			i := &Item{
-				ID:              item.ID,
-				Title:           item.Title,
-				Description:     item.Description,
-				Price:           item.Price,
-				InStock:         item.InStock,
-				Src:             item.Src,
-				Alt:             item.Alt,
-				IsHit:           item.IsHit,
-				IsRec:           item.IsRec,
-				Media:           item.Media,
-				Attributes:      item.Attributes,
-				Variants:        item.Variants,
-				RelatedProducts: item.RelatedProducts,
-			}
-
-			for _, category := range item.Categories {
-				var c Category
-				if err := conn.Where("slug = ?", category.Slug).First(&c).Error; err == nil {
-					i.Categories = append(i.Categories, &c)
-				}
-			}
-
-			if err = conn.Create(i).Error; err != nil {
-				panic(err)
-			}
-		}
-
-		zap.L().Debug("Items have been created")
-	} else {
-		zap.L().Debug("Items already exist")
-	}
 }
