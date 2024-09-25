@@ -1,0 +1,256 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/JMURv/par-pro/api/pb/users";
+import "google/protobuf/timestamp.proto";
+
+message Empty {}
+message uuidMsg {string uuid = 1;}
+message slugMsg {string slug = 1;}
+
+message ListReq {
+  uint64 page = 1;
+  uint64 size = 2;
+}
+
+message SearchReq {
+  string query = 1;
+  uint64 page = 2;
+  uint64 size = 3;
+}
+
+message CategoryMsg {
+  string slug = 1;
+  string title = 2;
+  uint64 product_quantity = 3;
+  string src = 4;
+  string alt = 5;
+  string parent_slug = 6;
+  CategoryMsg parent_CategoryMsg = 7;
+  repeated CategoryMsg children = 8;
+  repeated ItemMsg items = 9;
+  repeated Filter filters = 10;
+
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message CategoryWithSlug {
+  string slug = 1;
+  CategoryMsg category = 2;
+}
+
+message Filter {
+  uint64 id = 1;
+  string name = 2;
+  repeated string values = 3;
+  string category_slug = 4;
+  string filter_type = 5;
+  float min_value = 6;
+  float max_value = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message ItemMsg {
+  string id = 1;
+  string article = 2;
+  string title = 3;
+  string description = 4;
+  float price = 5;
+  uint32 quantity_in_stock = 6;
+  string src = 7;
+  string alt = 8;
+  bool in_stock = 9;
+  bool is_hit = 10;
+  bool is_rec = 11;
+  string parent_item_id = 12;
+
+  repeated CategoryMsg categories = 13;
+
+  repeated ItemMedia media = 14;
+  repeated ItemAttribute attributes = 15;
+  repeated ItemMsg variants = 16;
+  repeated RelatedProduct related_products = 17;
+
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+message ItemMedia {
+  uint64 id = 1;
+  string src = 2;
+  string alt = 3;
+  string item_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ItemAttribute {
+  uint64 id = 1;
+  string name = 2;
+  string value = 3;
+  string item_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message RelatedProduct {
+  uint64 id = 1;
+  string item_id = 2;
+  string related_item_id = 3;
+  ItemMsg related_item = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+service Item {
+  rpc ItemSearch(SearchReq) returns (PaginatedItemRes);
+  rpc ItemAttrSearch(SearchReq) returns (PaginatedItemRes);
+  rpc ListItems(ListReq) returns (PaginatedItemRes);
+  rpc CreateItem(ItemMsg) returns (ItemMsg);
+  rpc GetItem(uuidMsg) returns (ItemMsg);
+  rpc UpdateItem(ItemWithUid) returns (ItemMsg);
+  rpc DeleteItem(uuidMsg) returns (ItemMsg);
+  rpc ListRelatedItems(uuidMsg) returns (RelatedItemsList);
+  rpc listCategoryItems(listCategoryItemsReq) returns (PaginatedItemRes);
+  rpc HitItems(ListReq) returns (PaginatedItemRes);
+  rpc RecItems(ListReq) returns (PaginatedItemRes);
+}
+
+message listCategoryItemsReq {
+  string page = 1;
+  string size = 2;
+  string sort = 3;
+  string category_slug = 4;
+}
+
+message RelatedItemsList {
+  repeated RelatedProduct items = 1;
+}
+
+message ItemWithUid {
+  ItemMsg item = 1;
+  string uid = 2;
+}
+
+message PaginatedItemRes {
+  repeated ItemMsg data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+service Category {
+  rpc ListCategories(ListReq) returns (PaginatedCategoryRes);
+  rpc CreateCategory(CategoryMsg) returns (CategoryMsg);
+  rpc CategorySearch(SearchReq) returns (PaginatedCategoryRes);
+  rpc CategoryFiltersSearch(SearchReq) returns (PaginatedFilterRes);
+  rpc GetCategory(slugMsg) returns (CategoryMsg);
+  rpc UpdateCategory(CategoryWithSlug) returns (CategoryMsg);
+  rpc DeleteCategory(slugMsg) returns (Empty);
+  rpc ListCategoryFilters(slugMsg) returns (FilterListRes);
+}
+
+message PaginatedCategoryRes {
+  repeated CategoryMsg data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+message FilterListRes {
+  repeated Filter data = 1;
+}
+
+message PaginatedFilterRes {
+  repeated Filter data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+service Favorite {
+  rpc ListFavorites(uuidMsg) returns (FavoriteListMsg);
+  rpc AddToFavorites(UserAndItemIds) returns (FavoriteMsg);
+  rpc RemoveFromFavorites(UserAndItemIds) returns (Empty);
+}
+
+message FavoriteMsg {
+  uint64 id = 1;
+  string user_id = 2;
+  string item_id = 3;
+  ItemMsg item = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message FavoriteListMsg {
+  repeated FavoriteMsg data = 1;
+}
+message UserAndItemIds {
+  string user_id = 1;
+  string item_id = 2;
+}
+
+service Promotion {
+  rpc ListPromotions(ListReq) returns (PaginatedPromoRes);
+  rpc PromotionSearch(SearchReq) returns (PaginatedPromoRes);
+  rpc CreatePromotion(PromoMsg) returns (PromoMsg);
+  rpc GetPromotion(slugMsg) returns (PromoMsg);
+  rpc UpdatePromotion(PromoWithSlug) returns (PromoMsg);
+  rpc DeletePromotion(slugMsg) returns (Empty);
+  rpc ListPromotionItems(ListPromotionItemsReq) returns (PaginatedPromoItemsRes);
+}
+
+message PromoMsg {
+  string slug = 1;
+  string title = 2;
+  string description = 3;
+  string src = 4;
+  string alt = 5;
+  google.protobuf.Timestamp lasts_to = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message PromoWithSlug {
+  string slug = 1;
+  PromoMsg data = 2;
+}
+
+message PromoItem {
+  uint64 id = 1;
+  uint32 discount = 2;
+  string promotion_slug = 3;
+  string item_id = 4;
+  ItemMsg item = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message PaginatedPromoRes {
+  repeated PromoMsg data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+message PaginatedPromoItemsRes {
+  repeated PromoItem data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+message ListPromotionItemsReq {
+  string slug = 1;
+  string page = 2;
+  string size = 3;
+}

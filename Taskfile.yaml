@@ -1,0 +1,53 @@
+version: 3
+
+vars:
+  USERNAME: jmurv
+  IMAGE_NAME: par-pro-products
+
+tasks:
+
+  app:
+    desc: Run app
+    cmds:
+      - "go run cmd/main.go"
+
+  pb:
+    desc: Gen Proto file
+    cmds:
+      - "protoc --go_out=. --go-grpc_out=. --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative api/pb/products.proto"
+
+  build:
+    desc: Build app
+    cmds:
+      - "docker build --no-cache -t {{.USERNAME}}/{{.IMAGE_NAME}}:latest ."
+
+  push:
+    desc: Push image to docker registry
+    cmds:
+      - "docker push {{.USERNAME}}/{{.IMAGE_NAME}}:latest"
+
+  all:
+    desc: Run all
+    cmds:
+      - "task db redis"
+
+  db:
+    desc: Run dev db
+    cmds:
+      - "docker run -d --rm --name par_pro_users_db \
+        -p 5432:5432 \
+        -e POSTGRES_PASSWORD=794613825Zx! \
+        -e POSTGRES_DB=par_pro_users_db \
+        -e POSTGRES_USER=postgres \
+        -v pg_data_par_pro_users:/var/lib/postgresql/data \
+        postgres:15.0-alpine"
+
+  redis:
+    desc: Run redis
+    cmds:
+      - "docker run -d --rm --name=redis -p 6379:6379 redis:alpine"
+
+  kafka:
+    desc: Run kafka
+    cmds:
+      - "docker run -d --rm --name=kafka -p 9092:9092 apache/kafka:3.7.0"

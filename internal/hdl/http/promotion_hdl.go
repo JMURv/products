@@ -1,0 +1,234 @@
+package http
+
+import (
+	"errors"
+	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
+	"github.com/JMURv/par-pro/products/internal/repo"
+	"github.com/JMURv/par-pro/products/internal/validation"
+	"github.com/JMURv/par-pro/products/pkg/consts"
+	"github.com/JMURv/par-pro/products/pkg/model"
+	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
+	"github.com/goccy/go-json"
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+func RegisterPromotionRoutes(r *mux.Router, h *Handler) {
+	r.HandleFunc("/api/promotions", h.listPromotions).Methods(http.MethodGet)
+	r.HandleFunc("/api/promotions", middlewareFunc(h.createPromotion, h.authMiddleware)).Methods(http.MethodPost)
+	r.HandleFunc("/api/promotions/search", h.promotionSearch).Methods(http.MethodGet)
+	r.HandleFunc("/api/promotions/{slug}", h.getPromotion).Methods(http.MethodGet)
+	r.HandleFunc("/api/promotions/{slug}", middlewareFunc(h.updatePromotion, h.authMiddleware)).Methods(http.MethodPut)
+	r.HandleFunc("/api/promotions/{slug}", middlewareFunc(h.deletePromotion, h.authMiddleware)).Methods(http.MethodDelete)
+	r.HandleFunc("/api/promotions/{slug}/items", h.listPromotionItems).Methods(http.MethodGet)
+}
+
+func (h *Handler) promotionSearch(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "promo.search.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	query := r.URL.Query().Get("q")
+	if len(query) < 3 {
+		utils.SuccessResponse(w, c, []string{})
+		return
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		size = 10
+	}
+
+	res, err := h.ctrl.PromotionSearch(r.Context(), query, page, size)
+	if err != nil {
+		zap.L().Debug("failed to search promotions", zap.String("op", op), zap.String("query", query), zap.Error(err))
+		c = http.StatusInternalServerError
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessPaginatedResponse(w, c, res)
+}
+
+func (h *Handler) listPromotionItems(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "promo.listPromotionItems.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		size = consts.DefaultPageSize
+	}
+
+	res, err := h.ctrl.ListPromotionItems(r.Context(), mux.Vars(r)["slug"], page, size)
+	if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to list promotion items", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessPaginatedResponse(w, c, res)
+}
+
+func (h *Handler) listPromotions(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "promo.listPromotions.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		size = consts.DefaultPageSize
+	}
+
+	res, err := h.ctrl.ListPromotions(r.Context(), page, size)
+	if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to list promotions", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessPaginatedResponse(w, c, res)
+}
+
+func (h *Handler) getPromotion(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "promo.getPromotion.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	res, err := h.ctrl.GetPromotion(r.Context(), mux.Vars(r)["slug"])
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		c = http.StatusNotFound
+		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to get promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessResponse(w, c, res)
+}
+
+func (h *Handler) createPromotion(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusCreated
+	const op = "promo.createPromotion.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	p := &model.Promotion{}
+	if err := json.NewDecoder(r.Body).Decode(p); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to decode request", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	if err := validation.ValidatePromotion(p); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to validate obj", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	res, err := h.ctrl.CreatePromotion(r.Context(), p)
+	if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to create promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessResponse(w, c, res)
+}
+
+func (h *Handler) updatePromotion(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "promo.updatePromotion.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	p := &model.Promotion{}
+	if err := json.NewDecoder(r.Body).Decode(p); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to decode request", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	if err := validation.ValidatePromotion(p); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to validate obj", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	res, err := h.ctrl.UpdatePromotion(r.Context(), mux.Vars(r)["slug"], p)
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		c = http.StatusNotFound
+		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to update promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessResponse(w, c, res)
+}
+
+func (h *Handler) deletePromotion(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusNoContent
+	const op = "promo.deletePromotion.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	err := h.ctrl.DeletePromotion(r.Context(), mux.Vars(r)["slug"])
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		c = http.StatusNotFound
+		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to delete promotion", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessResponse(w, c, "OK")
+}
