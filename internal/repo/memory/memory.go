@@ -8,11 +8,11 @@ import (
 
 type Repository struct {
 	sync.RWMutex
-	usersData map[uuid.UUID]*model.User
+	itemsData map[uuid.UUID]*model.Item
 }
 
 func New() *Repository {
 	return &Repository{
-		usersData: make(map[uuid.UUID]*model.User),
+		itemsData: make(map[uuid.UUID]*model.Item),
 	}
 }

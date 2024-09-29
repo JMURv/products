@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"errors"
-	repo "github.com/JMURv/par-pro/products/internal/repo"
+	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/model"
 	gormutil "github.com/JMURv/par-pro/products/pkg/utils/gorm"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"

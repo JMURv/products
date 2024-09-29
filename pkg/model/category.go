@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/JMURv/par-pro/products/pkg/model/etc"
+	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"github.com/lib/pq"
 	"time"
 )
@@ -16,8 +18,10 @@ type Category struct {
 	ParentCategory *Category  `json:"parent_category" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
 	Children       []Category `json:"children" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
 
-	Items   []*Item  `json:"items" gorm:"many2many:item_categories;constraint:OnDelete:SET NULL"`
-	Filters []Filter `json:"filters" gorm:"foreignKey:CategorySlug;constraint:OnDelete:CASCADE"`
+	Banner  *etc.Banner `json:"banner"`
+	SEO     *seo.SEO    `json:"seo"`
+	Items   []*Item     `json:"items" gorm:"many2many:item_categories;constraint:OnDelete:SET NULL"`
+	Filters []Filter    `json:"filters" gorm:"foreignKey:CategorySlug;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -280,6 +281,11 @@ func (c *Controller) CreateItem(ctx context.Context, i *model.Item) (*model.Item
 		return nil, err
 	}
 
+	if err := c.seo.CreateSEO(ctx, seo.Item.String(), res.ID.String(), i.SEO); err != nil {
+		zap.L().Debug("failed to create item SEO", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
 	if bytes, err := json.Marshal(res); err == nil {
 		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, res.ID), bytes); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
@@ -304,12 +310,9 @@ func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Ite
 		return nil, err
 	}
 
-	// TODO: Here call SEO mcrsvc
-	seo, err := c.UpdateItemSEO(ctx, uid, &i.SEO)
-	if err != nil {
+	if err := c.seo.UpdateSEO(ctx, seo.Item.String(), res.ID.String(), i.SEO); err != nil {
 		zap.L().Debug("failed to update item SEO", zap.Error(err), zap.String("op", op))
 	}
-	res.SEO = *seo
 
 	if bytes, err := json.Marshal(res); err == nil {
 		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, uid), bytes); err != nil {
@@ -333,6 +336,10 @@ func (c *Controller) DeleteItem(ctx context.Context, uid uuid.UUID) error {
 	} else if err != nil {
 		zap.L().Debug("failed to delete item", zap.Error(err), zap.String("op", op))
 		return err
+	}
+
+	if err := c.seo.DeleteSEO(ctx, seo.Item.String(), uid.String()); err != nil {
+		zap.L().Debug("failed to delete item SEO", zap.Error(err), zap.String("op", op))
 	}
 
 	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {

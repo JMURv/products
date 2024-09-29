@@ -6,11 +6,16 @@ import (
 )
 
 type Config struct {
-	ServiceName string        `yaml:"serviceName" env-required:"true"`
-	Server      *ServerConfig `yaml:"server"`
-	DB          *DBConfig     `yaml:"db"`
-	Redis       *RedisConfig  `yaml:"redis"`
-	Jaeger      *JaegerConfig `yaml:"jaeger"`
+	ServiceName  string              `yaml:"serviceName" env-required:"true"`
+	SrvDiscovery *SrvDiscoveryConfig `yaml:"srv_discovery"`
+	Server       *ServerConfig       `yaml:"server"`
+	DB           *DBConfig           `yaml:"db"`
+	Redis        *RedisConfig        `yaml:"redis"`
+	Jaeger       *JaegerConfig       `yaml:"jaeger"`
+}
+
+type SrvDiscoveryConfig struct {
+	URL string `yaml:"url" env-required:"true"`
 }
 
 type ServerConfig struct {

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"github.com/google/uuid"
 	"time"
 )
@@ -21,6 +22,7 @@ type Item struct {
 	Categories   []*Category `json:"categories" gorm:"many2many:item_categories;constraint:OnDelete:CASCADE"`
 	ParentItemID *uuid.UUID  `json:"parent_item_id" gorm:"type:uuid"`
 
+	SEO             *seo.SEO         `json:"seo"`
 	Media           []ItemMedia      `json:"media" gorm:"foreignKey:ItemID;constraint:OnDelete:CASCADE"`
 	Attributes      []ItemAttribute  `json:"attributes" gorm:"foreignKey:ItemID;constraint:OnDelete:CASCADE"`
 	Variants        []Item           `json:"variants" gorm:"foreignKey:ParentItemID;constraint:OnDelete:CASCADE"`

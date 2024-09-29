@@ -1,4 +1,6 @@
-serviceName: "backend"
+serviceName: "products"
+srv_discovery:
+  url: "http://localhost:50030"
 
 server:
   mode: "dev"

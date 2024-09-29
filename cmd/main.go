@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"github.com/JMURv/par-pro/products/internal/cache/redis"
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
+	etc_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/etc/grpc"
+	seo_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/seo/grpc"
+	"github.com/JMURv/par-pro/products/internal/discovery"
+
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
 	handler "github.com/JMURv/par-pro/products/internal/hdl/grpc"
 	tracing "github.com/JMURv/par-pro/products/internal/metrics/jaeger"
@@ -45,11 +49,23 @@ func main() {
 	go metrics.New(conf.Server.Port + 5).Start(ctx)
 	go tracing.Start(ctx, conf.ServiceName, conf.Jaeger)
 
+	dscvry := discovery.New(
+		conf.SrvDiscovery.URL,
+		conf.ServiceName,
+		fmt.Sprintf("%v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
+	)
+
+	if err := dscvry.Register(); err != nil {
+		zap.L().Fatal("Error registering service", zap.Error(err))
+	}
+
 	// Setting up main app
 	cache := redis.New(conf.Redis)
 	repo := db.New(conf.DB)
 
-	svc := ctrl.New(repo, cache)
+	seoCtrl := seo_ctrl_grpc.New(dscvry)
+	etcCtrl := etc_ctrl_grpc.New(dscvry)
+	svc := ctrl.New(repo, cache, seoCtrl, etcCtrl)
 	h := handler.New(svc)
 
 	// Graceful shutdown
@@ -62,6 +78,9 @@ func main() {
 
 		cancel()
 		cache.Close()
+		if err := dscvry.Deregister(); err != nil {
+			zap.L().Debug("Error deregistering service", zap.Error(err))
+		}
 		if err := h.Close(); err != nil {
 			zap.L().Debug("Error closing handler", zap.Error(err))
 		}

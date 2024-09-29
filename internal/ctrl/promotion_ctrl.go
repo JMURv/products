@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/JMURv/par-pro/products/internal/ctrl/etc"
+	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -155,13 +157,18 @@ func (c *Controller) CreatePromotion(ctx context.Context, p *model.Promotion) (*
 	defer span.Finish()
 
 	p.Slug = slugify.Slugify(p.Title)
-
-	// TODO: call mcrsvc
-	p.Banner.PromotionSlug = &p.Slug
-	p.SEO.PromotionSlug = &p.Slug
 	res, err := c.repo.CreatePromotion(ctx, p)
 	if err != nil {
 		zap.L().Debug("failed to create promotion", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if err := c.etc.CreateBanner(ctx, etc.Promo.String(), res.Slug, p.Banner); err != nil {
+		zap.L().Debug("failed to create banner", zap.Error(err), zap.String("op", op))
+	}
+
+	if err := c.seo.CreateSEO(ctx, seo.Promo.String(), res.Slug, p.SEO); err != nil {
+		zap.L().Debug("failed to create SEO", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
@@ -190,25 +197,13 @@ func (c *Controller) UpdatePromotion(ctx context.Context, slug string, p *model.
 		return nil, err
 	}
 
-	// TODO: call mcrsvc
-	banner, err := c.UpdateBannerByPromoSlug(ctx, res.Slug, &p.Banner)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, ErrNotFound
-	} else if err != nil {
-		zap.L().Debug("failed to update promotion banner", zap.Error(err), zap.String("op", op))
-		return nil, err
+	if err := c.etc.UpdateBanner(ctx, etc.Promo.String(), res.Slug, p.Banner); err != nil {
+		zap.L().Debug("failed to update banner", zap.Error(err), zap.String("op", op))
 	}
-	res.Banner = *banner
 
-	// TODO: call mcrsvc
-	seo, err := c.UpdatePromotionSEO(ctx, res.Slug, &p.SEO)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, ErrNotFound
-	} else if err != nil {
-		zap.L().Debug("failed to update promotion SEO", zap.Error(err), zap.String("op", op))
-		return nil, err
+	if err := c.seo.UpdateSEO(ctx, seo.Promo.String(), res.Slug, p.SEO); err != nil {
+		zap.L().Debug("failed to update SEO", zap.Error(err), zap.String("op", op))
 	}
-	res.SEO = *seo
 
 	if bytes, err := json.Marshal(res); err == nil {
 		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(promotionCacheKey, res.Slug), bytes); err != nil {
@@ -233,6 +228,14 @@ func (c *Controller) DeletePromotion(ctx context.Context, slug string) error {
 	} else if err != nil {
 		zap.L().Debug("failed to delete promotion", zap.Error(err), zap.String("op", op))
 		return err
+	}
+
+	if err := c.etc.DeleteBanner(ctx, etc.Promo.String(), slug); err != nil {
+		zap.L().Debug("failed to delete banner", zap.Error(err), zap.String("op", op))
+	}
+
+	if err := c.seo.DeleteSEO(ctx, seo.Promo.String(), slug); err != nil {
+		zap.L().Debug("failed to delete  SEO", zap.Error(err), zap.String("op", op))
 	}
 
 	if err = c.cache.Delete(ctx, fmt.Sprintf(promotionCacheKey, slug)); err != nil {

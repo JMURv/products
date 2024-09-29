@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/JMURv/par-pro/products/internal/ctrl/etc"
+	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -188,14 +190,15 @@ func (c *Controller) CreateCategory(ctx context.Context, category *model.Categor
 		return nil, err
 	}
 
-	// TODO: Call banner mcrsvc
-	category.Banner.CategorySlug = &category.Slug
-	banner, err := c.CreateBanner(ctx, &category.Banner)
-	if err != nil {
+	if err := c.etc.CreateBanner(ctx, etc.Category.String(), res.Slug, category.Banner); err != nil {
 		zap.L().Debug("failed to create category banner", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
-	res.Banner = *banner
+
+	if err := c.seo.CreateSEO(ctx, seo.Category.String(), res.Slug, category.SEO); err != nil {
+		zap.L().Debug("failed to create category SEO", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
 
 	if bytes, err := json.Marshal(res); err == nil {
 		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(categoryCacheKey, res.Slug), bytes); err != nil {
@@ -225,20 +228,13 @@ func (c *Controller) UpdateCategory(ctx context.Context, slug string, category *
 		return nil, err
 	}
 
-	// TODO: Call SEO and Banner mcrsvc
-	seo, err := c.UpdateCategorySEO(ctx, slug, &category.SEO)
-	if err != nil {
-		zap.L().Debug("failed to update category seo", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-	res.SEO = *seo
-
-	banner, err := c.UpdateBannerByCategorySlug(ctx, slug, &category.Banner)
-	if err != nil {
+	if err := c.etc.UpdateBanner(ctx, etc.Category.String(), res.Slug, category.Banner); err != nil {
 		zap.L().Debug("failed to update category banner", zap.Error(err), zap.String("op", op))
-		return nil, err
 	}
-	res.Banner = *banner
+
+	if err := c.seo.UpdateSEO(ctx, seo.Category.String(), res.Slug, res.SEO); err != nil {
+		zap.L().Debug("failed to update category SEO", zap.Error(err), zap.String("op", op))
+	}
 
 	if bytes, err := json.Marshal(res); err == nil {
 		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(categoryCacheKey, res.Slug), bytes); err != nil {
@@ -262,6 +258,14 @@ func (c *Controller) DeleteCategory(ctx context.Context, slug string) error {
 	} else if err != nil {
 		zap.L().Debug("failed to delete category", zap.Error(err), zap.String("op", op))
 		return err
+	}
+
+	if err := c.etc.DeleteBanner(ctx, etc.Category.String(), slug); err != nil {
+		zap.L().Debug("failed to delete category banner", zap.Error(err), zap.String("op", op))
+	}
+
+	if err := c.seo.DeleteSEO(ctx, seo.Category.String(), slug); err != nil {
+		zap.L().Debug("failed to delete category SEO", zap.Error(err), zap.String("op", op))
 	}
 
 	if err = c.cache.Delete(ctx, fmt.Sprintf(categoryCacheKey, slug)); err != nil {

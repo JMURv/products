@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/JMURv/par-pro/products/pkg/model/etc"
+	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"github.com/google/uuid"
 	"time"
 )
@@ -14,8 +16,10 @@ type Promotion struct {
 	LastsTo        time.Time        `json:"lasts_to" gorm:"not null"`
 	PromotionItems []*PromotionItem `json:"promotion_items" gorm:"foreignKey:PromotionSlug;constraint:OnDelete:CASCADE"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	Banner    *etc.Banner `json:"banner"`
+	SEO       *seo.SEO    `json:"seo"`
+	CreatedAt time.Time   `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time   `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 type PromotionItem struct {

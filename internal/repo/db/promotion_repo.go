@@ -3,9 +3,9 @@ package db
 import (
 	"context"
 	"errors"
-	repo "github.com/JMURv/par-pro/internal/repository"
-	"github.com/JMURv/par-pro/pkg/model"
-	utils "github.com/JMURv/par-pro/pkg/utils/http"
+	"github.com/JMURv/par-pro/products/internal/repo"
+	"github.com/JMURv/par-pro/products/pkg/model"
+	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
