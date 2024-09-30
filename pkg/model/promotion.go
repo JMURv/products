@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+type PaginatedPromosData struct {
+	Data        []*Promotion `json:"data"`
+	Count       int64        `json:"count"`
+	TotalPages  int          `json:"total_pages"`
+	CurrentPage int          `json:"current_page"`
+	HasNextPage bool         `json:"has_next_page"`
+}
+
 type Promotion struct {
 	Slug           string           `json:"slug" gorm:"primaryKey;unique;not null;type:varchar(255)"`
 	Title          string           `json:"title" gorm:"type:varchar(255);not null"`
@@ -16,10 +24,18 @@ type Promotion struct {
 	LastsTo        time.Time        `json:"lasts_to" gorm:"not null"`
 	PromotionItems []*PromotionItem `json:"promotion_items" gorm:"foreignKey:PromotionSlug;constraint:OnDelete:CASCADE"`
 
-	Banner    *etc.Banner `json:"banner"`
-	SEO       *seo.SEO    `json:"seo"`
+	Banner    *etc.Banner `json:"banner" gorm:"-"`
+	SEO       *seo.SEO    `json:"seo" gorm:"-"`
 	CreatedAt time.Time   `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time   `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+type PaginatedPromoItemsData struct {
+	Data        []*PromotionItem `json:"data"`
+	Count       int64            `json:"count"`
+	TotalPages  int              `json:"total_pages"`
+	CurrentPage int              `json:"current_page"`
+	HasNextPage bool             `json:"has_next_page"`
 }
 
 type PromotionItem struct {

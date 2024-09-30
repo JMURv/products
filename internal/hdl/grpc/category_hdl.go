@@ -7,7 +7,6 @@ import (
 	"github.com/JMURv/par-pro/products/internal/ctrl"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/validation"
-	md "github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/JMURv/par-pro/products/pkg/model/mapper"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -40,7 +39,7 @@ func (h *Handler) CategorySearch(ctx context.Context, req *pb.SearchReq) (*pb.Pa
 	}
 
 	return &pb.PaginatedCategoryRes{
-		Data:        mapper.ListCategoryToProto(res.Data.([]*md.Category)),
+		Data:        mapper.ListCategoryToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -72,7 +71,7 @@ func (h *Handler) CategoryFiltersSearch(ctx context.Context, req *pb.SearchReq) 
 	}
 
 	return &pb.PaginatedFilterRes{
-		Data:        mapper.ListFiltersToProto(res.Data.([]*md.Filter)),
+		Data:        mapper.ListFiltersToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -104,7 +103,7 @@ func (h *Handler) ListCategories(ctx context.Context, req *pb.ListReq) (*pb.Pagi
 	}
 
 	return &pb.PaginatedCategoryRes{
-		Data:        mapper.ListCategoryToProto(res.Data.([]*md.Category)),
+		Data:        mapper.ListCategoryToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),

@@ -7,7 +7,6 @@ import (
 	"github.com/JMURv/par-pro/products/internal/ctrl"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/validation"
-	md "github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/JMURv/par-pro/products/pkg/model/mapper"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -41,7 +40,7 @@ func (h *Handler) ItemSearch(ctx context.Context, req *pb.SearchReq) (*pb.Pagina
 	}
 
 	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+		Data:        mapper.ListItemToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -49,7 +48,7 @@ func (h *Handler) ItemSearch(ctx context.Context, req *pb.SearchReq) (*pb.Pagina
 	}, nil
 }
 
-func (h *Handler) ItemAttrSearch(ctx context.Context, req *pb.SearchReq) (*pb.PaginatedItemRes, error) {
+func (h *Handler) ItemAttrSearch(ctx context.Context, req *pb.SearchReq) (*pb.PaginatedItemAttrsRes, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.ItemAttrSearch.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -72,8 +71,8 @@ func (h *Handler) ItemAttrSearch(ctx context.Context, req *pb.SearchReq) (*pb.Pa
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+	return &pb.PaginatedItemAttrsRes{
+		Data:        mapper.ListItemAttributesToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -105,7 +104,7 @@ func (h *Handler) ListItems(ctx context.Context, req *pb.ListReq) (*pb.Paginated
 	}
 
 	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+		Data:        mapper.ListItemToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -321,7 +320,7 @@ func (h *Handler) ListCategoryItems(ctx context.Context, req *pb.ListCategoryIte
 	}
 
 	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+		Data:        mapper.ListItemToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -352,7 +351,7 @@ func (h *Handler) HitItems(ctx context.Context, req *pb.ListReq) (*pb.PaginatedI
 	}
 
 	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+		Data:        mapper.ListItemToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -383,7 +382,7 @@ func (h *Handler) RecItems(ctx context.Context, req *pb.ListReq) (*pb.PaginatedI
 	}
 
 	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data.([]*md.Item)),
+		Data:        mapper.ListItemToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),

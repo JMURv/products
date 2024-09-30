@@ -9,7 +9,6 @@ import (
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
-	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/JMURv/par-pro/products/pkg/utils/slugify"
 	"github.com/goccy/go-json"
 	"github.com/opentracing/opentracing-go"
@@ -24,7 +23,7 @@ const categoryFiltersSearchCacheKey = "categories-filters-search:%v:%v:%v"
 const invalidateCategoryRelatedCachePattern = "categories-*"
 
 type categoryRepo interface {
-	ListCategories(ctx context.Context, page, size int) (*utils.PaginatedData, error)
+	ListCategories(ctx context.Context, page, size int) (*model.PaginatedCategoryData, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (*model.Category, error)
 	CreateCategory(ctx context.Context, c *model.Category) (*model.Category, error)
 	UpdateCategory(ctx context.Context, slug string, c *model.Category) (*model.Category, error)
@@ -32,8 +31,8 @@ type categoryRepo interface {
 
 	ListCategoryFilters(ctx context.Context, slug string) ([]*model.Filter, error)
 
-	CategorySearch(ctx context.Context, query string, page int, size int) (*utils.PaginatedData, error)
-	CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (res *utils.PaginatedData, err error)
+	CategorySearch(ctx context.Context, query string, page int, size int) (*model.PaginatedCategoryData, error)
+	CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (res *model.PaginatedFilterData, err error)
 }
 
 func (c *Controller) invalidateCategoryRelatedCache() {
@@ -43,14 +42,14 @@ func (c *Controller) invalidateCategoryRelatedCache() {
 	}
 }
 
-func (c *Controller) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (*utils.PaginatedData, error) {
+func (c *Controller) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedFilterData, error) {
 	const op = "category.categoryFiltersSearch.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
 	cacheKey := fmt.Sprintf(categoryFiltersSearchCacheKey, query, page, size)
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedFilterData{}
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
 	}
@@ -69,14 +68,14 @@ func (c *Controller) CategoryFiltersSearch(ctx context.Context, query string, pa
 	return res, nil
 }
 
-func (c *Controller) CategorySearch(ctx context.Context, query string, page int, size int) (*utils.PaginatedData, error) {
+func (c *Controller) CategorySearch(ctx context.Context, query string, page int, size int) (*model.PaginatedCategoryData, error) {
 	const op = "category.search.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
 	cacheKey := fmt.Sprintf(categorySearchCacheKey, query, page, size)
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedCategoryData{}
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
 	}
@@ -121,14 +120,14 @@ func (c *Controller) ListCategoryFilters(ctx context.Context, slug string) ([]*m
 	return res, nil
 }
 
-func (c *Controller) ListCategories(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (c *Controller) ListCategories(ctx context.Context, page, size int) (*model.PaginatedCategoryData, error) {
 	const op = "category.ListCategories.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
 	cacheKey := fmt.Sprintf(categoryListCacheKey, page, size)
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedCategoryData{}
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
 	}

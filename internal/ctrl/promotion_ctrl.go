@@ -9,7 +9,6 @@ import (
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
-	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/JMURv/par-pro/products/pkg/utils/slugify"
 	"github.com/goccy/go-json"
 	"github.com/opentracing/opentracing-go"
@@ -23,15 +22,14 @@ const PromotionItemsCacheKey = "items-promos:%v:%v:%v"
 const invalidatePromoRelatedCachePattern = "promos-*"
 
 type promotionRepo interface {
-	ListPromotions(ctx context.Context, page, size int) (*utils.PaginatedData, error)
+	PromotionSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedPromosData, error)
+	ListPromotions(ctx context.Context, page, size int) (*model.PaginatedPromosData, error)
 	GetPromotion(ctx context.Context, slug string) (*model.Promotion, error)
 	CreatePromotion(ctx context.Context, p *model.Promotion) (*model.Promotion, error)
 	UpdatePromotion(ctx context.Context, slug string, p *model.Promotion) (*model.Promotion, error)
 	DeletePromotion(ctx context.Context, slug string) error
 
-	ListPromotionItems(ctx context.Context, slug string, page, size int) (*utils.PaginatedData, error)
-
-	PromotionSearch(ctx context.Context, query string, page int, size int) (*utils.PaginatedData, error)
+	ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error)
 }
 
 func (c *Controller) invalidatePromoRelatedCache() {
@@ -41,13 +39,13 @@ func (c *Controller) invalidatePromoRelatedCache() {
 	}
 }
 
-func (c *Controller) PromotionSearch(ctx context.Context, query string, page int, size int) (*utils.PaginatedData, error) {
+func (c *Controller) PromotionSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedPromosData, error) {
 	const op = "promotion.search.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedPromosData{}
 	cacheKey := fmt.Sprintf(promotionSearchCacheKey, query, page, size)
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
@@ -68,13 +66,13 @@ func (c *Controller) PromotionSearch(ctx context.Context, query string, page int
 	return res, nil
 }
 
-func (c *Controller) ListPromotionItems(ctx context.Context, slug string, page, size int) (*utils.PaginatedData, error) {
+func (c *Controller) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
 	const op = "promo.ListPromotionItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedPromoItemsData{}
 	cacheKey := fmt.Sprintf(PromotionItemsCacheKey, slug, page, size)
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
@@ -93,13 +91,13 @@ func (c *Controller) ListPromotionItems(ctx context.Context, slug string, page, 
 	return res, nil
 }
 
-func (c *Controller) ListPromotions(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (c *Controller) ListPromotions(ctx context.Context, page, size int) (*model.PaginatedPromosData, error) {
 	const op = "promo.ListPromotions.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &utils.PaginatedData{}
+	cached := &model.PaginatedPromosData{}
 	cacheKey := fmt.Sprintf(PromotionListCacheKey, page, size)
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil

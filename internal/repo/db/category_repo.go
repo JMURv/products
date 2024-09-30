@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/model"
-	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"time"
 )
 
-func (r *Repository) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (res *utils.PaginatedData, err error) {
+func (r *Repository) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (res *model.PaginatedFilterData, err error) {
 	const op = "category.categoryFiltersSearch.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -28,17 +27,17 @@ func (r *Repository) CategoryFiltersSearch(ctx context.Context, query string, pa
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var categories []*model.Filter
+	var filters []*model.Filter
 	if err = r.conn.
 		Offset((page-1)*size).
 		Limit(size).
 		Where("name ILIKE ?", "%"+query+"%").
-		Find(&categories).Error; err != nil {
+		Find(&filters).Error; err != nil {
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
-		Data:        res,
+	return &model.PaginatedFilterData{
+		Data:        filters,
 		Count:       count,
 		TotalPages:  totalPages,
 		CurrentPage: page,
@@ -46,7 +45,7 @@ func (r *Repository) CategoryFiltersSearch(ctx context.Context, query string, pa
 	}, nil
 }
 
-func (r *Repository) CategorySearch(ctx context.Context, query string, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) CategorySearch(ctx context.Context, query string, page, size int) (*model.PaginatedCategoryData, error) {
 	const op = "category.search.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -71,7 +70,7 @@ func (r *Repository) CategorySearch(ctx context.Context, query string, page, siz
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &model.PaginatedCategoryData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -80,7 +79,7 @@ func (r *Repository) CategorySearch(ctx context.Context, query string, page, siz
 	}, nil
 }
 
-func (r *Repository) ListCategories(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) ListCategories(ctx context.Context, page, size int) (*model.PaginatedCategoryData, error) {
 	const op = "category.ListCategories.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -103,7 +102,7 @@ func (r *Repository) ListCategories(ctx context.Context, page, size int) (*utils
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &model.PaginatedCategoryData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,

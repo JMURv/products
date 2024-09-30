@@ -7,7 +7,6 @@ import (
 	"github.com/JMURv/par-pro/products/internal/ctrl"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/validation"
-	md "github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/JMURv/par-pro/products/pkg/model/mapper"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -40,7 +39,7 @@ func (h *Handler) PromotionSearch(ctx context.Context, req *pb.SearchReq) (*pb.P
 	}
 
 	return &pb.PaginatedPromoRes{
-		Data:        mapper.ListPromosToProto(res.Data.([]*md.Promotion)),
+		Data:        mapper.ListPromosToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -72,7 +71,7 @@ func (h *Handler) ListPromotions(ctx context.Context, req *pb.ListReq) (*pb.Pagi
 	}
 
 	return &pb.PaginatedPromoRes{
-		Data:        mapper.ListPromosToProto(res.Data.([]*md.Promotion)),
+		Data:        mapper.ListPromosToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
@@ -107,7 +106,7 @@ func (h *Handler) ListPromotionItems(ctx context.Context, req *pb.ListPromotionI
 	}
 
 	return &pb.PaginatedPromoItemsRes{
-		Data:        mapper.ListPromoItemsToProto(res.Data.([]*md.PromotionItem)),
+		Data:        mapper.ListPromoItemsToProto(res.Data),
 		Count:       res.Count,
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),

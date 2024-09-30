@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/repo"
-	"github.com/JMURv/par-pro/products/pkg/model"
+	md "github.com/JMURv/par-pro/products/pkg/model"
 	gormutil "github.com/JMURv/par-pro/products/pkg/utils/gorm"
-	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -14,13 +13,13 @@ import (
 	"time"
 )
 
-func (r *Repository) ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*utils.PaginatedData, error) {
+func (r *Repository) ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*md.PaginatedItemsData, error) {
 	const op = "items.ListCategoryItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	query := r.conn.
-		Model(&model.Item{}).
+		Model(&md.Item{}).
 		Joins("JOIN item_categories ON item_categories.item_id = items.id").
 		Joins("JOIN categories ON categories.slug = item_categories.category_slug").
 		Where("categories.slug = ?", slug).
@@ -38,12 +37,12 @@ func (r *Repository) ListCategoryItems(ctx context.Context, slug string, page, s
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var res []*model.Item
+	var res []*md.Item
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&res).Error; err != nil {
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemsData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -52,21 +51,21 @@ func (r *Repository) ListCategoryItems(ctx context.Context, slug string, page, s
 	}, nil
 }
 
-func (r *Repository) ItemAttrSearch(ctx context.Context, query string, size, page int) (res *utils.PaginatedData, err error) {
+func (r *Repository) ItemAttrSearch(ctx context.Context, query string, size, page int) (res *md.PaginatedItemAttrData, err error) {
 	const op = "items.ItemAttrSearch.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
 	if err = r.conn.
-		Model(&model.ItemAttribute{}).
+		Model(&md.ItemAttribute{}).
 		Where("name ILIKE ?", "%"+query+"%").
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var attrs []*model.ItemAttribute
+	var attrs []*md.ItemAttribute
 	if err = r.conn.
 		Offset((page-1)*size).
 		Limit(size).
@@ -75,7 +74,7 @@ func (r *Repository) ItemAttrSearch(ctx context.Context, query string, size, pag
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemAttrData{
 		Data:        attrs,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -84,18 +83,18 @@ func (r *Repository) ItemAttrSearch(ctx context.Context, query string, size, pag
 	}, nil
 }
 
-func (r *Repository) ItemSearch(ctx context.Context, query string, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) ItemSearch(ctx context.Context, query string, page, size int) (*md.PaginatedItemsData, error) {
 	const op = "items.ItemSearch.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
-	if err := r.conn.Model(&model.Item{}).Where("title ILIKE ?", "%"+query+"%").Count(&count).Error; err != nil {
+	if err := r.conn.Model(&md.Item{}).Where("title ILIKE ?", "%"+query+"%").Count(&count).Error; err != nil {
 		return nil, err
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var items []*model.Item
+	var items []*md.Item
 	if err := r.conn.
 		Offset((page-1)*size).
 		Limit(size).
@@ -105,7 +104,7 @@ func (r *Repository) ItemSearch(ctx context.Context, query string, page, size in
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemsData{
 		Data:        items,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -114,20 +113,20 @@ func (r *Repository) ItemSearch(ctx context.Context, query string, page, size in
 	}, nil
 }
 
-func (r *Repository) ListItems(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) ListItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
 	const op = "items.ListItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
 	if err := r.conn.
-		Model(&model.Item{}).
+		Model(&md.Item{}).
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var res []*model.Item
+	var res []*md.Item
 	if err := r.conn.
 		Offset((page - 1) * size).
 		Limit(size).
@@ -139,7 +138,7 @@ func (r *Repository) ListItems(ctx context.Context, page, size int) (*utils.Pagi
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemsData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -148,12 +147,12 @@ func (r *Repository) ListItems(ctx context.Context, page, size int) (*utils.Pagi
 	}, nil
 }
 
-func (r *Repository) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error) {
+func (r *Repository) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item, error) {
 	const op = "items.GetItemByUUID.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	res := &model.Item{}
+	res := &md.Item{}
 	if err := r.conn.
 		Preload("Media").
 		Preload("Categories").
@@ -171,13 +170,11 @@ func (r *Repository) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.I
 	return res, nil
 }
 
-func (r *Repository) CreateItem(ctx context.Context, i *model.Item) (*model.Item, error) {
+func (r *Repository) CreateItem(ctx context.Context, i *md.Item) (*md.Item, error) {
 	const op = "items.CreateItem.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	i.CreatedAt = time.Now()
-	i.UpdatedAt = time.Now()
 	if err := r.conn.Create(i).Error; err != nil {
 		return nil, err
 	}
@@ -185,7 +182,7 @@ func (r *Repository) CreateItem(ctx context.Context, i *model.Item) (*model.Item
 	return i, nil
 }
 
-func (r *Repository) UpdateItem(ctx context.Context, uid uuid.UUID, newData *model.Item) (*model.Item, error) {
+func (r *Repository) UpdateItem(ctx context.Context, uid uuid.UUID, newData *md.Item) (*md.Item, error) {
 	const op = "items.UpdateItem.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -256,7 +253,7 @@ func (r *Repository) DeleteItem(ctx context.Context, uid uuid.UUID) error {
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	res := &model.Item{}
+	res := &md.Item{}
 	if err := r.conn.Where("id = ?", uid).First(res).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return repo.ErrNotFound
 	} else if err != nil {
@@ -270,19 +267,19 @@ func (r *Repository) DeleteItem(ctx context.Context, uid uuid.UUID) error {
 	return nil
 }
 
-func (r *Repository) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*model.RelatedProduct, error) {
+func (r *Repository) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md.RelatedProduct, error) {
 	const op = "items.ListRelatedItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	var item model.Item
+	var item md.Item
 	if err := r.conn.First(&item, "id = ?", uid).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, repo.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}
 
-	var res []*model.RelatedProduct
+	var res []*md.RelatedProduct
 	if err := r.conn.
 		Preload("RelatedItem").
 		Where("item_id=?", uid).
@@ -295,21 +292,21 @@ func (r *Repository) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*mo
 	return res, nil
 }
 
-func (r *Repository) HitItems(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) HitItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
 	const op = "items.HitItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
 	if err := r.conn.
-		Model(&model.Item{}).
+		Model(&md.Item{}).
 		Where("is_hit=?", true).
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var res []*model.Item
+	var res []*md.Item
 	if err := r.conn.
 		Offset((page-1)*size).
 		Limit(size).
@@ -319,7 +316,7 @@ func (r *Repository) HitItems(ctx context.Context, page, size int) (*utils.Pagin
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemsData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -328,21 +325,21 @@ func (r *Repository) HitItems(ctx context.Context, page, size int) (*utils.Pagin
 	}, nil
 }
 
-func (r *Repository) RecItems(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) RecItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
 	const op = "items.RecItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
 	if err := r.conn.
-		Model(&model.Item{}).
+		Model(&md.Item{}).
 		Where("is_rec=?", true).
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
 	totalPages := int((count + int64(size) - 1) / int64(size))
 
-	var res []*model.Item
+	var res []*md.Item
 	if err := r.conn.
 		Offset((page-1)*size).
 		Limit(size).
@@ -352,7 +349,7 @@ func (r *Repository) RecItems(ctx context.Context, page, size int) (*utils.Pagin
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &md.PaginatedItemsData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,

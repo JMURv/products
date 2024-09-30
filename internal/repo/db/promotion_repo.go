@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/model"
-	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -13,7 +12,7 @@ import (
 	"time"
 )
 
-func (r *Repository) PromotionSearch(ctx context.Context, query string, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) PromotionSearch(ctx context.Context, query string, page, size int) (*model.PaginatedPromosData, error) {
 	const op = "promo.search.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -38,7 +37,7 @@ func (r *Repository) PromotionSearch(ctx context.Context, query string, page, si
 		return nil, err
 	}
 
-	return &utils.PaginatedData{
+	return &model.PaginatedPromosData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -47,7 +46,7 @@ func (r *Repository) PromotionSearch(ctx context.Context, query string, page, si
 	}, nil
 }
 
-func (r *Repository) ListPromotionItems(ctx context.Context, slug string, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
 	const op = "promo.ListPromotionItems.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -68,7 +67,7 @@ func (r *Repository) ListPromotionItems(ctx context.Context, slug string, page, 
 		Find(&res).Error; err != nil {
 		return nil, err
 	}
-	return &utils.PaginatedData{
+	return &model.PaginatedPromoItemsData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,
@@ -96,7 +95,7 @@ func (r *Repository) GetPromotion(ctx context.Context, slug string) (*model.Prom
 	return res, nil
 }
 
-func (r *Repository) ListPromotions(ctx context.Context, page, size int) (*utils.PaginatedData, error) {
+func (r *Repository) ListPromotions(ctx context.Context, page, size int) (*model.PaginatedPromosData, error) {
 	const op = "promo.ListPromotions.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
@@ -115,7 +114,7 @@ func (r *Repository) ListPromotions(ctx context.Context, page, size int) (*utils
 		Find(&res).Error; err != nil {
 		return nil, err
 	}
-	return &utils.PaginatedData{
+	return &model.PaginatedPromosData{
 		Data:        res,
 		Count:       count,
 		TotalPages:  totalPages,

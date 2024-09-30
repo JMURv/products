@@ -7,7 +7,16 @@ import (
 	"time"
 )
 
+type PaginatedCategoryData struct {
+	Data        []*Category `json:"data"`
+	Count       int64       `json:"count"`
+	TotalPages  int         `json:"total_pages"`
+	CurrentPage int         `json:"current_page"`
+	HasNextPage bool        `json:"has_next_page"`
+}
+
 type Category struct {
+	//ID              uint64 `json:"id" gorm:"primaryKey;unique;not null"`
 	Slug            string `json:"slug" gorm:"primaryKey;unique;not null"`
 	Title           string `json:"title" gorm:"type:varchar(255);unique;not null"`
 	ProductQuantity int    `json:"product_quantity"`
@@ -18,13 +27,21 @@ type Category struct {
 	ParentCategory *Category  `json:"parent_category" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
 	Children       []Category `json:"children" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
 
-	Banner  *etc.Banner `json:"banner"`
-	SEO     *seo.SEO    `json:"seo"`
+	Banner  *etc.Banner `json:"banner" gorm:"-"`
+	SEO     *seo.SEO    `json:"seo" gorm:"-"`
 	Items   []*Item     `json:"items" gorm:"many2many:item_categories;constraint:OnDelete:SET NULL"`
 	Filters []Filter    `json:"filters" gorm:"foreignKey:CategorySlug;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+type PaginatedFilterData struct {
+	Data        []*Filter `json:"data"`
+	Count       int64     `json:"count"`
+	TotalPages  int       `json:"total_pages"`
+	CurrentPage int       `json:"current_page"`
+	HasNextPage bool      `json:"has_next_page"`
 }
 
 type Filter struct {

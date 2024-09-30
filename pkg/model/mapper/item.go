@@ -29,9 +29,7 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 		InStock:         req.InStock,
 		IsHit:           req.IsHit,
 		IsRec:           req.IsRec,
-		ParentItemId:    req.ParentItemID.String(),
 		Media:           ListItemMediaToProto(req.Media),
-		Attributes:      ListItemAttributesToProto(req.Attributes),
 		CreatedAt: &timestamppb.Timestamp{
 			Seconds: req.CreatedAt.Unix(),
 			Nanos:   int32(req.CreatedAt.Nanosecond()),
@@ -40,6 +38,31 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 			Seconds: req.UpdatedAt.Unix(),
 			Nanos:   int32(req.UpdatedAt.Nanosecond()),
 		},
+	}
+
+	if req.ParentItemID != nil {
+		item.ParentItemId = req.ParentItemID.String()
+	}
+
+	if len(req.Attributes) > 0 {
+		res := make([]*pb.ItemAttribute, len(req.Attributes))
+		for i, v := range req.Attributes {
+			res[i] = &pb.ItemAttribute{
+				Id:     v.ID,
+				Name:   v.Name,
+				Value:  v.Value,
+				ItemId: v.ItemID.String(),
+				CreatedAt: &timestamppb.Timestamp{
+					Seconds: v.CreatedAt.Unix(),
+					Nanos:   int32(v.CreatedAt.Nanosecond()),
+				},
+				UpdatedAt: &timestamppb.Timestamp{
+					Seconds: v.UpdatedAt.Unix(),
+					Nanos:   int32(v.UpdatedAt.Nanosecond()),
+				},
+			}
+		}
+		item.Attributes = res
 	}
 
 	if len(req.RelatedProducts) > 0 {
@@ -94,7 +117,7 @@ func RelatedProductsToProto(req *md.RelatedProduct) *pb.RelatedProduct {
 	}
 }
 
-func ListItemAttributesToProto(req []md.ItemAttribute) []*pb.ItemAttribute {
+func ListItemAttributesToProto(req []*md.ItemAttribute) []*pb.ItemAttribute {
 	res := make([]*pb.ItemAttribute, len(req))
 	for i, v := range req {
 		res[i] = &pb.ItemAttribute{
@@ -154,7 +177,7 @@ func ItemFromProto(req *pb.ItemMsg) *md.Item {
 
 	uid, err := uuid.Parse(req.Id)
 	if err != nil {
-		zap.L().Debug("failed to parse user id")
+		zap.L().Debug("failed to parse item id")
 	} else {
 		modelItem.ID = uid
 	}
@@ -187,7 +210,7 @@ func ItemFromProto(req *pb.ItemMsg) *md.Item {
 
 			uid, err := uuid.Parse(v.ItemId)
 			if err != nil {
-				zap.L().Debug("failed to parse user id")
+				zap.L().Debug("failed to parse item id")
 			} else {
 				iMedia.ItemID = uid
 			}

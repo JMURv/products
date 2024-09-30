@@ -37,7 +37,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ItemClient interface {
 	ItemSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
-	ItemAttrSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
+	ItemAttrSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemAttrsRes, error)
 	ListItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
 	CreateItem(ctx context.Context, in *ItemMsg, opts ...grpc.CallOption) (*ItemMsg, error)
 	GetItem(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*ItemMsg, error)
@@ -67,9 +67,9 @@ func (c *itemClient) ItemSearch(ctx context.Context, in *SearchReq, opts ...grpc
 	return out, nil
 }
 
-func (c *itemClient) ItemAttrSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemRes, error) {
+func (c *itemClient) ItemAttrSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemAttrsRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PaginatedItemRes)
+	out := new(PaginatedItemAttrsRes)
 	err := c.cc.Invoke(ctx, Item_ItemAttrSearch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (c *itemClient) RecItems(ctx context.Context, in *ListReq, opts ...grpc.Cal
 // for forward compatibility.
 type ItemServer interface {
 	ItemSearch(context.Context, *SearchReq) (*PaginatedItemRes, error)
-	ItemAttrSearch(context.Context, *SearchReq) (*PaginatedItemRes, error)
+	ItemAttrSearch(context.Context, *SearchReq) (*PaginatedItemAttrsRes, error)
 	ListItems(context.Context, *ListReq) (*PaginatedItemRes, error)
 	CreateItem(context.Context, *ItemMsg) (*ItemMsg, error)
 	GetItem(context.Context, *UuidMsg) (*ItemMsg, error)
@@ -195,7 +195,7 @@ type UnimplementedItemServer struct{}
 func (UnimplementedItemServer) ItemSearch(context.Context, *SearchReq) (*PaginatedItemRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ItemSearch not implemented")
 }
-func (UnimplementedItemServer) ItemAttrSearch(context.Context, *SearchReq) (*PaginatedItemRes, error) {
+func (UnimplementedItemServer) ItemAttrSearch(context.Context, *SearchReq) (*PaginatedItemAttrsRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ItemAttrSearch not implemented")
 }
 func (UnimplementedItemServer) ListItems(context.Context, *ListReq) (*PaginatedItemRes, error) {

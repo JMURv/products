@@ -78,9 +78,12 @@ func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
 		Src:             req.Src,
 		Alt:             req.Alt,
 		ParentSlug:      &req.ParentSlug,
-		ParentCategory:  CategoryFromProto(req.Parent_CategoryMsg),
 		CreatedAt:       req.CreatedAt.AsTime(),
 		UpdatedAt:       req.UpdatedAt.AsTime(),
+	}
+
+	if req.Parent_CategoryMsg != nil {
+		res.ParentCategory = CategoryFromProto(req.Parent_CategoryMsg)
 	}
 
 	if len(req.Children) > 0 {

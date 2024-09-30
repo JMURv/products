@@ -107,7 +107,7 @@ message RelatedProduct {
 
 service Item {
   rpc ItemSearch(SearchReq) returns (PaginatedItemRes);
-  rpc ItemAttrSearch(SearchReq) returns (PaginatedItemRes);
+  rpc ItemAttrSearch(SearchReq) returns (PaginatedItemAttrsRes);
   rpc ListItems(ListReq) returns (PaginatedItemRes);
   rpc CreateItem(ItemMsg) returns (ItemMsg);
   rpc GetItem(uuidMsg) returns (ItemMsg);
@@ -137,6 +137,14 @@ message ItemWithUid {
 
 message PaginatedItemRes {
   repeated ItemMsg data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
+}
+
+message PaginatedItemAttrsRes {
+  repeated ItemAttribute data = 1;
   int64 count = 2;
   int64 total_pages = 3;
   int64 current_page = 4;

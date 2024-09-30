@@ -7,13 +7,12 @@ import (
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	pm "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 )
-
-//type Ctrl interface {
-//}
 
 type Handler struct {
 	pb.ItemServer
@@ -21,6 +20,7 @@ type Handler struct {
 	pb.PromotionServer
 	pb.FavoriteServer
 	srv  *grpc.Server
+	hsrv *health.Server
 	ctrl *ctrl.Controller
 }
 
@@ -33,11 +33,14 @@ func New(ctrl *ctrl.Controller) *Handler {
 			metrics.SrvMetrics.StreamServerInterceptor(pm.WithExemplarFromContext(metrics.Exemplar)),
 		),
 	)
+	hsrv := health.NewServer()
+	hsrv.SetServingStatus("products", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	reflection.Register(srv)
 	return &Handler{
-		ctrl: ctrl,
 		srv:  srv,
+		hsrv: hsrv,
+		ctrl: ctrl,
 	}
 }
 
@@ -46,6 +49,7 @@ func (h *Handler) Start(port int) {
 	pb.RegisterCategoryServer(h.srv, h)
 	pb.RegisterPromotionServer(h.srv, h)
 	pb.RegisterFavoriteServer(h.srv, h)
+	grpc_health_v1.RegisterHealthServer(h.srv, h.hsrv)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
@@ -57,5 +61,6 @@ func (h *Handler) Start(port int) {
 
 func (h *Handler) Close() error {
 	h.srv.GracefulStop()
+	h.hsrv.Shutdown()
 	return nil
 }
