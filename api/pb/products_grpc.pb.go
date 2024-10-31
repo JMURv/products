@@ -39,9 +39,9 @@ type ItemClient interface {
 	ItemSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
 	ItemAttrSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedItemAttrsRes, error)
 	ListItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
-	CreateItem(ctx context.Context, in *ItemMsg, opts ...grpc.CallOption) (*ItemMsg, error)
+	CreateItem(ctx context.Context, in *ItemMsg, opts ...grpc.CallOption) (*UuidMsg, error)
 	GetItem(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*ItemMsg, error)
-	UpdateItem(ctx context.Context, in *ItemWithUid, opts ...grpc.CallOption) (*ItemMsg, error)
+	UpdateItem(ctx context.Context, in *ItemWithUid, opts ...grpc.CallOption) (*Empty, error)
 	DeleteItem(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*Empty, error)
 	ListRelatedItems(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*RelatedItemsList, error)
 	ListCategoryItems(ctx context.Context, in *ListCategoryItemsReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
@@ -87,9 +87,9 @@ func (c *itemClient) ListItems(ctx context.Context, in *ListReq, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *itemClient) CreateItem(ctx context.Context, in *ItemMsg, opts ...grpc.CallOption) (*ItemMsg, error) {
+func (c *itemClient) CreateItem(ctx context.Context, in *ItemMsg, opts ...grpc.CallOption) (*UuidMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ItemMsg)
+	out := new(UuidMsg)
 	err := c.cc.Invoke(ctx, Item_CreateItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -107,9 +107,9 @@ func (c *itemClient) GetItem(ctx context.Context, in *UuidMsg, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *itemClient) UpdateItem(ctx context.Context, in *ItemWithUid, opts ...grpc.CallOption) (*ItemMsg, error) {
+func (c *itemClient) UpdateItem(ctx context.Context, in *ItemWithUid, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ItemMsg)
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, Item_UpdateItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -174,9 +174,9 @@ type ItemServer interface {
 	ItemSearch(context.Context, *SearchReq) (*PaginatedItemRes, error)
 	ItemAttrSearch(context.Context, *SearchReq) (*PaginatedItemAttrsRes, error)
 	ListItems(context.Context, *ListReq) (*PaginatedItemRes, error)
-	CreateItem(context.Context, *ItemMsg) (*ItemMsg, error)
+	CreateItem(context.Context, *ItemMsg) (*UuidMsg, error)
 	GetItem(context.Context, *UuidMsg) (*ItemMsg, error)
-	UpdateItem(context.Context, *ItemWithUid) (*ItemMsg, error)
+	UpdateItem(context.Context, *ItemWithUid) (*Empty, error)
 	DeleteItem(context.Context, *UuidMsg) (*Empty, error)
 	ListRelatedItems(context.Context, *UuidMsg) (*RelatedItemsList, error)
 	ListCategoryItems(context.Context, *ListCategoryItemsReq) (*PaginatedItemRes, error)
@@ -201,13 +201,13 @@ func (UnimplementedItemServer) ItemAttrSearch(context.Context, *SearchReq) (*Pag
 func (UnimplementedItemServer) ListItems(context.Context, *ListReq) (*PaginatedItemRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListItems not implemented")
 }
-func (UnimplementedItemServer) CreateItem(context.Context, *ItemMsg) (*ItemMsg, error) {
+func (UnimplementedItemServer) CreateItem(context.Context, *ItemMsg) (*UuidMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateItem not implemented")
 }
 func (UnimplementedItemServer) GetItem(context.Context, *UuidMsg) (*ItemMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetItem not implemented")
 }
-func (UnimplementedItemServer) UpdateItem(context.Context, *ItemWithUid) (*ItemMsg, error) {
+func (UnimplementedItemServer) UpdateItem(context.Context, *ItemWithUid) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateItem not implemented")
 }
 func (UnimplementedItemServer) DeleteItem(context.Context, *UuidMsg) (*Empty, error) {

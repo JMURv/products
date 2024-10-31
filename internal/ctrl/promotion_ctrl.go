@@ -25,8 +25,8 @@ type promotionRepo interface {
 	PromotionSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedPromosData, error)
 	ListPromotions(ctx context.Context, page, size int) (*model.PaginatedPromosData, error)
 	GetPromotion(ctx context.Context, slug string) (*model.Promotion, error)
-	CreatePromotion(ctx context.Context, p *model.Promotion) (*model.Promotion, error)
-	UpdatePromotion(ctx context.Context, slug string, p *model.Promotion) (*model.Promotion, error)
+	CreatePromotion(ctx context.Context, p *model.Promotion) (string, error)
+	UpdatePromotion(ctx context.Context, slug string, p *model.Promotion) error
 	DeletePromotion(ctx context.Context, slug string) error
 
 	ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error)
@@ -35,7 +35,11 @@ type promotionRepo interface {
 func (c *Controller) invalidatePromoRelatedCache() {
 	ctx := context.Background()
 	if err := c.cache.InvalidateKeysByPattern(ctx, invalidatePromoRelatedCachePattern); err != nil {
-		zap.L().Debug("failed to invalidate cache", zap.String("key", invalidatePromoRelatedCachePattern), zap.Error(err))
+		zap.L().Debug(
+			"failed to invalidate cache",
+			zap.String("key", invalidatePromoRelatedCachePattern),
+			zap.Error(err),
+		)
 	}
 }
 
@@ -148,69 +152,62 @@ func (c *Controller) GetPromotion(ctx context.Context, slug string) (*model.Prom
 	return res, nil
 }
 
-func (c *Controller) CreatePromotion(ctx context.Context, p *model.Promotion) (*model.Promotion, error) {
+func (c *Controller) CreatePromotion(ctx context.Context, p *model.Promotion) (string, error) {
 	const op = "promo.CreatePromotion.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
 	p.Slug = slugify.Slugify(p.Title)
-	res, err := c.repo.CreatePromotion(ctx, p)
+	slug, err := c.repo.CreatePromotion(ctx, p)
 	if err != nil {
 		zap.L().Debug("failed to create promotion", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return "", err
 	}
 
-	if err := c.etc.CreateBanner(ctx, etc.Promo.String(), res.Slug, p.Banner); err != nil {
+	if err := c.etc.CreateBanner(ctx, etc.Promo.String(), slug, p.Banner); err != nil {
 		zap.L().Debug("failed to create banner", zap.Error(err), zap.String("op", op))
+		return "", err
 	}
 
-	if err := c.seo.CreateSEO(ctx, seo.Promo.String(), res.Slug, p.SEO); err != nil {
+	if err := c.seo.CreateSEO(ctx, seo.Promo.String(), slug, p.SEO); err != nil {
 		zap.L().Debug("failed to create SEO", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(promotionCacheKey, p.Slug), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
+		return "", err
 	}
 
 	go c.invalidatePromoRelatedCache()
-	return res, nil
+	return slug, nil
 }
 
-func (c *Controller) UpdatePromotion(ctx context.Context, slug string, p *model.Promotion) (*model.Promotion, error) {
+func (c *Controller) UpdatePromotion(ctx context.Context, slug string, p *model.Promotion) error {
 	const op = "promo.UpdatePromotion.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	res, err := c.repo.UpdatePromotion(ctx, slug, p)
+	err := c.repo.UpdatePromotion(ctx, slug, p)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		zap.L().Debug("failed to find promotion", zap.Error(err), zap.String("op", op))
-		return nil, ErrNotFound
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update promotion", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return err
 	}
 
-	if err := c.etc.UpdateBanner(ctx, etc.Promo.String(), res.Slug, p.Banner); err != nil {
+	if err := c.etc.UpdateBanner(ctx, etc.Promo.String(), slug, p.Banner); err != nil {
 		zap.L().Debug("failed to update banner", zap.Error(err), zap.String("op", op))
 	}
 
-	if err := c.seo.UpdateSEO(ctx, seo.Promo.String(), res.Slug, p.SEO); err != nil {
+	if err := c.seo.UpdateSEO(ctx, seo.Promo.String(), slug, p.SEO); err != nil {
 		zap.L().Debug("failed to update SEO", zap.Error(err), zap.String("op", op))
 	}
 
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(promotionCacheKey, res.Slug), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
+	if err = c.cache.Delete(ctx, fmt.Sprintf(promotionCacheKey, slug)); err != nil {
+		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
 	}
 
 	go c.invalidatePromoRelatedCache()
-	return res, nil
+	return nil
 }
 
 func (c *Controller) DeletePromotion(ctx context.Context, slug string) error {

@@ -15,29 +15,29 @@ type PaginatedItemsData struct {
 }
 
 type Item struct {
-	ID              uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Title           string    `json:"title" gorm:"type:varchar(255);not null"`
-	Description     string    `json:"description" gorm:"type:text"`
+	ID              uuid.UUID `json:"id"`
+	Title           string    `json:"title"`
+	Description     string    `json:"description"`
 	Price           float64   `json:"price"`
 	QuantityInStock int       `json:"quantity_in_stock"`
-	InStock         bool      `json:"in_stock" gorm:"default:true"`
-	Src             string    `json:"src" gorm:"type:varchar(255)"`
-	Alt             string    `json:"alt" gorm:"type:varchar(255)"`
+	InStock         bool      `json:"in_stock"`
+	Src             string    `json:"src"`
+	Alt             string    `json:"alt"`
 	IsHit           bool      `json:"is_hit"`
 	IsRec           bool      `json:"is_rec"`
-	Article         string    `json:"article" gorm:"type:varchar(255)"`
+	Article         string    `json:"article"`
 
-	Categories   []*Category `json:"categories" gorm:"many2many:item_categories;constraint:OnDelete:CASCADE"`
-	ParentItemID *uuid.UUID  `json:"parent_item_id" gorm:"type:uuid"`
+	Categories   []Category `json:"categories"`
+	ParentItemID uuid.UUID  `json:"parent_item_id"`
 
-	SEO             *seo.SEO         `json:"seo" gorm:"-"`
-	Media           []ItemMedia      `json:"media" gorm:"foreignKey:ItemID;constraint:OnDelete:CASCADE"`
-	Attributes      []ItemAttribute  `json:"attributes" gorm:"foreignKey:ItemID;constraint:OnDelete:CASCADE"`
-	Variants        []Item           `json:"variants" gorm:"foreignKey:ParentItemID;constraint:OnDelete:CASCADE"`
-	RelatedProducts []RelatedProduct `json:"related_products" gorm:"foreignKey:ItemID;constraint:OnDelete:CASCADE"`
+	SEO             seo.SEO          `json:"seo"`
+	Media           []ItemMedia      `json:"media"`
+	Attributes      []ItemAttribute  `json:"attributes"`
+	Variants        []Item           `json:"variants"`
+	RelatedProducts []RelatedProduct `json:"related_products"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PaginatedItemAttrData struct {
@@ -49,25 +49,30 @@ type PaginatedItemAttrData struct {
 }
 
 type ItemAttribute struct {
-	ID    uint64 `json:"id" gorm:"primaryKey"`
-	Name  string `json:"name" gorm:"type:varchar(255)"`
-	Value string `json:"value" gorm:"type:text"`
+	ID    uint64 `json:"id"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 
 	ItemID uuid.UUID `json:"item_id"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ItemMedia struct {
-	ID  uint64 `json:"id" gorm:"primaryKey"`
-	Src string `json:"src" gorm:"type:varchar(255)"`
-	Alt string `json:"alt" gorm:"type:varchar(255)"`
+	ID  uint64 `json:"id"`
+	Src string `json:"src"`
+	Alt string `json:"alt"`
 
 	ItemID uuid.UUID `json:"item_id"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ItemCategory struct {
+	ItemID       uuid.UUID `json:"item_id"`
+	CategorySlug string    `json:"category_slug"`
 }
 
 type RelatedProduct struct {
@@ -75,8 +80,8 @@ type RelatedProduct struct {
 
 	ItemID        uuid.UUID `json:"item_id"`
 	RelatedItemID uuid.UUID `json:"related_item_id"`
-	RelatedItem   Item      `json:"related_item" gorm:"foreignKey:RelatedItemID;constraint:OnDelete:CASCADE"`
+	RelatedItem   Item      `json:"related_item"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

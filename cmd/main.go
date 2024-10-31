@@ -7,6 +7,7 @@ import (
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
 	etc_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/etc/grpc"
 	seo_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/seo/grpc"
+	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso/grpc"
 	"github.com/JMURv/par-pro/products/internal/discovery"
 
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
@@ -63,10 +64,11 @@ func main() {
 	cache := redis.New(conf.Redis)
 	repo := db.New(conf.DB)
 
+	ssoCtrl := sso_ctrl_grpc.New(dscvry)
 	seoCtrl := seo_ctrl_grpc.New(dscvry)
 	etcCtrl := etc_ctrl_grpc.New(dscvry)
 	svc := ctrl.New(repo, cache, seoCtrl, etcCtrl)
-	h := handler.New(svc)
+	h := handler.New(svc, ssoCtrl)
 
 	// Graceful shutdown
 	go func() {

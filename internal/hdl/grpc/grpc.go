@@ -1,14 +1,18 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	pb "github.com/JMURv/par-pro/products/api/pb"
 	"github.com/JMURv/par-pro/products/internal/ctrl"
+	ssoCtrl "github.com/JMURv/par-pro/products/internal/ctrl/sso/grpc"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	pm "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
@@ -22,11 +26,13 @@ type Handler struct {
 	srv  *grpc.Server
 	hsrv *health.Server
 	ctrl *ctrl.Controller
+	sso  *ssoCtrl.SSOCtrl
 }
 
-func New(ctrl *ctrl.Controller) *Handler {
+func New(ctrl *ctrl.Controller, sso *ssoCtrl.SSOCtrl) *Handler {
 	srv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
+			AuthUnaryInterceptor(sso),
 			metrics.SrvMetrics.UnaryServerInterceptor(pm.WithExemplarFromContext(metrics.Exemplar)),
 		),
 		grpc.ChainStreamInterceptor(
@@ -41,6 +47,7 @@ func New(ctrl *ctrl.Controller) *Handler {
 		srv:  srv,
 		hsrv: hsrv,
 		ctrl: ctrl,
+		sso:  sso,
 	}
 }
 
@@ -63,4 +70,33 @@ func (h *Handler) Close() error {
 	h.srv.GracefulStop()
 	h.hsrv.Shutdown()
 	return nil
+}
+
+func AuthUnaryInterceptor(sso *ssoCtrl.SSOCtrl) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			zap.L().Debug("missing metadata")
+			return handler(ctx, req)
+		}
+
+		authHeaders := md["authorization"]
+		if len(authHeaders) == 0 {
+			zap.L().Debug("missing authorization token")
+			return handler(ctx, req)
+		}
+
+		tokenStr := authHeaders[0]
+		if len(tokenStr) > 7 && tokenStr[:7] == "Bearer " {
+			tokenStr = tokenStr[7:]
+		}
+
+		uid, err := sso.GetIDByToken(ctx, tokenStr)
+		if err != nil {
+			return nil, err
+		}
+
+		ctx = context.WithValue(ctx, "uid", uid)
+		return handler(ctx, req)
+	}
 }

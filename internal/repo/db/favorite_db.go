@@ -2,13 +2,13 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
-	"gorm.io/gorm"
-	"time"
+	"strings"
 )
 
 func (r *Repository) GetFavorites(ctx context.Context, uid uuid.UUID) ([]*model.Favorite, error) {
@@ -16,12 +16,35 @@ func (r *Repository) GetFavorites(ctx context.Context, uid uuid.UUID) ([]*model.
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	var res []*model.Favorite
-	if err := r.conn.Preload("Item").Where("user_id=?", uid).Find(&res).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	rows, err := r.conn.Query(favGetQ, uid)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return nil, repo.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
+	var res []*model.Favorite
+	for rows.Next() {
+		var f model.Favorite
+		if err = rows.Scan(
+			&f.UserID,
+			&f.ItemID,
+			&f.Item.ID,
+			&f.Item.Title,
+			&f.Item.Src,
+			&f.Item.Alt,
+			&f.Item.Price,
+		); err != nil {
+			return nil, err
+		}
+		res = append(res, &f)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }
 
@@ -31,32 +54,23 @@ func (r *Repository) AddToFavorites(ctx context.Context, uid uuid.UUID, itemID u
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	res := &model.Favorite{}
-	if err = r.conn.Where("user_id=? AND item_id=?", uid, itemID).First(res).Error; err == nil {
+	var insertedItemID uuid.UUID
+	err = r.conn.QueryRow(favAddQ, uid, itemID).Scan(&insertedItemID)
+	if err != nil {
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return nil, repo.ErrNotFound
+		}
+		return nil, err
+	}
+
+	if insertedItemID == uuid.Nil {
 		return nil, repo.ErrAlreadyExists
 	}
 
-	item := &model.Item{}
-	if err = r.conn.Where("id = ?", itemID).First(item).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, repo.ErrNotFound
-	} else if err != nil {
-		return nil, err
-	}
-
-	res = &model.Favorite{
-		UserID:    uid,
-		ItemID:    itemID,
-		Item:      *item,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err = r.conn.Create(res).Error; err != nil {
-		return nil, err
-	}
-
-	return res, nil
-
+	return &model.Favorite{
+		UserID: uid,
+		ItemID: itemID,
+	}, nil
 }
 
 func (r *Repository) RemoveFromFavorites(ctx context.Context, uid uuid.UUID, itemID uuid.UUID) error {
@@ -64,15 +78,13 @@ func (r *Repository) RemoveFromFavorites(ctx context.Context, uid uuid.UUID, ite
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
-	res := &model.Favorite{}
-	if err := r.conn.Where("user_id=? AND item_id=?", uid, itemID).First(res).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		return repo.ErrNotFound
-	} else if err != nil {
+	res, err := r.conn.Exec(favDelQ, uid, itemID)
+	if err != nil {
 		return err
 	}
 
-	if err := r.conn.Delete(res).Error; err != nil {
-		return err
+	if aff, _ := res.RowsAffected(); aff == 0 {
+		return repo.ErrNotFound
 	}
 
 	return nil

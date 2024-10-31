@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"github.com/JMURv/par-pro/products/internal/ctrl"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
@@ -10,26 +11,48 @@ import (
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func RegisterItemRoutes(r *mux.Router, h *Handler) {
-	r.HandleFunc("/api/item/search", h.itemSearch).Methods(http.MethodGet)
-	r.HandleFunc("/api/item/attr/search", h.itemAttrSearch).Methods(http.MethodGet)
-	r.HandleFunc("/api/item", h.ListItems).Methods(http.MethodGet)
-	r.HandleFunc("/api/item", middlewareFunc(h.CreateItem, h.authMiddleware)).Methods(http.MethodPost)
-	r.HandleFunc("/api/item/{uid}", h.GetItem).Methods(http.MethodGet)
-	r.HandleFunc("/api/item/{uid}", middlewareFunc(h.UpdateItem, h.authMiddleware)).Methods(http.MethodPut)
-	r.HandleFunc("/api/item/{uid}", middlewareFunc(h.DeleteItem, h.authMiddleware)).Methods(http.MethodDelete)
-	r.HandleFunc("/api/item/{uid}/related", h.ListRelatedItems).Methods(http.MethodGet)
-	r.HandleFunc("/api/category/{slug}/items", h.listCategoryItems).Methods(http.MethodGet)
+func RegisterItemRoutes(mux *http.ServeMux, h *Handler) {
+	mux.HandleFunc("/api/item/search", h.itemSearch)
+	mux.HandleFunc("/api/item/attr/search", h.itemAttrSearch)
+	mux.HandleFunc("/api/item/related/", h.ListRelatedItems)
+	mux.HandleFunc("/api/category/items/", h.listCategoryItems)
+	mux.HandleFunc("/api/hits", h.HitItems)
+	mux.HandleFunc("/api/recs", h.RecItems)
 
-	r.HandleFunc("/api/hits", h.HitItems).Methods(http.MethodGet)
-	r.HandleFunc("/api/recs", h.RecItems).Methods(http.MethodGet)
+	mux.HandleFunc(
+		"/api/item", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.ListItems(w, r)
+			case http.MethodPost:
+				middlewareFunc(h.CreateItem, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
+
+	mux.HandleFunc(
+		"/api/item/", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.GetItem(w, r)
+			case http.MethodPut:
+				middlewareFunc(h.UpdateItem, h.authMiddleware)
+			case http.MethodDelete:
+				middlewareFunc(h.DeleteItem, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
 }
 
 func (h *Handler) listCategoryItems(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +61,19 @@ func (h *Handler) listCategoryItems(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
 
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
@@ -52,11 +88,18 @@ func (h *Handler) listCategoryItems(w http.ResponseWriter, r *http.Request) {
 	sort := r.URL.Query().Get("sort")
 
 	filters := utils.ParseFiltersByURL(r)
-	res, err := h.ctrl.ListCategoryItems(r.Context(), mux.Vars(r)["slug"], page, size, filters, sort)
+	res, err := h.ctrl.ListCategoryItems(
+		r.Context(),
+		strings.TrimPrefix(r.URL.Path, "/api/category/items/"),
+		page,
+		size,
+		filters,
+		sort,
+	)
 	if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list category items", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -69,6 +112,19 @@ func (h *Handler) itemAttrSearch(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
 
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
@@ -103,6 +159,19 @@ func (h *Handler) itemSearch(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
+
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
 		utils.SuccessResponse(w, c, []string{})
@@ -136,6 +205,14 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
 		page = 1
@@ -164,7 +241,15 @@ func (h *Handler) GetItem(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	itemUID, err := uuid.Parse(mux.Vars(r)["uid"])
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	itemUID, err := uuid.Parse(strings.TrimPrefix(r.URL.Path, "/api/item/"))
 	if err != nil {
 		c = http.StatusBadRequest
 		utils.ErrResponse(w, c, err)
@@ -192,6 +277,14 @@ func (h *Handler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	const op = "items.CreateItem.handler"
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
 	}()
 
 	req := &model.Item{}
@@ -227,42 +320,58 @@ func (h *Handler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	req := &model.Item{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		c = http.StatusBadRequest
-		zap.L().Debug("failed to decode request", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
-		return
-	}
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
 
-	if err := validation.ItemValidation(req); err != nil {
-		c = http.StatusBadRequest
-		zap.L().Debug("failed to validate obj", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
-		return
-	}
-
-	itemUID, err := uuid.Parse(mux.Vars(r)["uid"])
+	itemUID, err := uuid.Parse(strings.TrimPrefix(r.URL.Path, "/api/item/"))
 	if err != nil {
 		c = http.StatusBadRequest
 		utils.ErrResponse(w, c, err)
 		return
 	}
 
-	res, err := h.ctrl.UpdateItem(r.Context(), itemUID, req)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		c = http.StatusNotFound
-		zap.L().Debug("failed to found item", zap.String("op", op), zap.String("uid", itemUID.String()), zap.Error(err))
-		utils.ErrResponse(w, c, err)
-		return
-	} else if err != nil {
-		c = http.StatusInternalServerError
-		zap.L().Debug("failed to update item", zap.String("op", op), zap.String("uid", itemUID.String()), zap.Error(err))
+	req := &model.Item{}
+	if err = json.NewDecoder(r.Body).Decode(req); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to decode request", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
 		return
 	}
 
-	utils.SuccessResponse(w, c, res)
+	if err = validation.ItemValidation(req); err != nil {
+		c = http.StatusBadRequest
+		zap.L().Debug("failed to validate obj", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	err = h.ctrl.UpdateItem(r.Context(), itemUID, req)
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		c = http.StatusNotFound
+		zap.L().Debug(
+			"failed to found item",
+			zap.String("op", op), zap.String("uid", itemUID.String()),
+			zap.Error(err),
+		)
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug(
+			"failed to update item",
+			zap.String("op", op), zap.String("uid", itemUID.String()),
+			zap.Error(err),
+		)
+		utils.ErrResponse(w, c, err)
+		return
+	}
+
+	utils.SuccessResponse(w, c, "OK")
 }
 
 func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +381,15 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	itemUID, err := uuid.Parse(mux.Vars(r)["uid"])
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	itemUID, err := uuid.Parse(strings.TrimPrefix(r.URL.Path, "/api/item/"))
 	if err != nil {
 		c = http.StatusBadRequest
 		utils.ErrResponse(w, c, err)
@@ -287,7 +404,12 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		c = http.StatusInternalServerError
-		zap.L().Debug("failed to delete item", zap.String("op", op), zap.String("uid", itemUID.String()), zap.Error(err))
+		zap.L().Debug(
+			"failed to delete item",
+			zap.String("op", op),
+			zap.String("uid", itemUID.String()),
+			zap.Error(err),
+		)
 		utils.ErrResponse(w, c, err)
 		return
 	}
@@ -302,7 +424,20 @@ func (h *Handler) ListRelatedItems(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	itemUID, err := uuid.Parse(mux.Vars(r)["uid"])
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
+
+	itemUID, err := uuid.Parse(strings.TrimPrefix(r.URL.Path, "/api/item/related/"))
 	if err != nil {
 		c = http.StatusBadRequest
 		utils.ErrResponse(w, c, err)
@@ -317,7 +452,12 @@ func (h *Handler) ListRelatedItems(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		c = http.StatusInternalServerError
-		zap.L().Debug("failed to list related items", zap.String("op", op), zap.String("uid", itemUID.String()), zap.Error(err))
+		zap.L().Debug(
+			"failed to list related items",
+			zap.String("op", op),
+			zap.String("uid", itemUID.String()),
+			zap.Error(err),
+		)
 		utils.ErrResponse(w, c, err)
 		return
 	}
@@ -331,6 +471,19 @@ func (h *Handler) HitItems(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
 
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
@@ -359,6 +512,19 @@ func (h *Handler) RecItems(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	defer func() {
+		if err := recover(); err != nil {
+			zap.L().Error("panic", zap.Any("err", err))
+			c = http.StatusInternalServerError
+			utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		}
+	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
 
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {

@@ -1,272 +1,165 @@
--- users table
-CREATE TABLE IF NOT EXISTS users
-(
-    id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-
-    name       VARCHAR(50)  NOT NULL UNIQUE,
-    password   VARCHAR(255) NOT NULL,
-    email      VARCHAR(50)  NOT NULL UNIQUE,
-
-    avatar     VARCHAR(255),
-    address    VARCHAR(255),
-    phone      VARCHAR(20),
-    is_opt BOOLEAN DEFAULT FALSE,
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE
-);
-
--- carts table
-CREATE TABLE IF NOT EXISTS carts
-(
-    id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    user_id    UUID NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
 -- categories
-CREATE TABLE IF NOT EXISTS categories
-(
+CREATE TABLE IF NOT EXISTS category (
     slug             VARCHAR(255) PRIMARY KEY UNIQUE NOT NULL,
-
     title            VARCHAR(255) UNIQUE             NOT NULL,
-    product_quantity INTEGER,
-
     src              VARCHAR(255),
     alt              VARCHAR(255),
-
     parent_slug      VARCHAR(255),
-    FOREIGN KEY (parent_slug) REFERENCES categories (slug) ON DELETE SET NULL
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_parent_category FOREIGN KEY (parent_slug) REFERENCES category (slug) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS filter (
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(255) NOT NULL,
+    values        VARCHAR(255)[],        -- Array of strings
+    filter_type   VARCHAR(50)  NOT NULL, -- "equality", "range"
+    min_value     FLOAT,                 -- For range filters
+    max_value     FLOAT,                 -- For range filters
+    category_slug VARCHAR(255) NOT NULL, -- Foreign key for Category
+
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_category FOREIGN KEY (category_slug) REFERENCES category (slug) ON DELETE CASCADE
 );
 
 -- items
-CREATE TABLE IF NOT EXISTS items
-(
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS item (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title       VARCHAR(255) NOT NULL,
+    article     VARCHAR(255),
+    description TEXT,
+    price       NUMERIC,
+    src         VARCHAR(255),
+    alt         VARCHAR(255),
 
-    title         VARCHAR(255) NOT NULL,
-    description   TEXT,
-    price         DECIMAL(10, 2),
-    in_stock      BOOLEAN          DEFAULT true,
+    in_stock    BOOLEAN          DEFAULT TRUE,
+    is_hit      BOOLEAN          DEFAULT FALSE,
+    is_rec      BOOLEAN          DEFAULT FALSE,
 
-    item_type     VARCHAR(50),
-    src           VARCHAR(255),
-    alt           VARCHAR(255),
+    created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
 
-    category_slug VARCHAR(255),
-    parent_id     UUID, -- self-referencing foreign key for variants
-    FOREIGN KEY (category_slug) REFERENCES categories (slug) ON DELETE SET NULL,
-    FOREIGN KEY (parent_id) REFERENCES items (id) ON DELETE CASCADE
+    parent_id   UUID, -- self-referencing foreign key for variants
+    CONSTRAINT fk_parent_item FOREIGN KEY (parent_id) REFERENCES item (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS item_category (
+    item_id       UUID         NOT NULL,
+    category_slug VARCHAR(255) NOT NULL,
+
+    PRIMARY KEY (item_id, category_slug),
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE,
+    CONSTRAINT fk_category FOREIGN KEY (category_slug) REFERENCES category (slug) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS item_media (
+    id         SERIAL PRIMARY KEY,
+    src        VARCHAR(255) NOT NULL,
+    alt        VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    item_id    UUID         NOT NULL,
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS item_attr (
+    id      SERIAL PRIMARY KEY,
+    name    VARCHAR(255) NOT NULL,
+    value   TEXT         NOT NULL,
+
+    item_id UUID         NOT NULL,
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS related_product (
+    PRIMARY KEY (item_id, related_item_id),
+    item_id         UUID NOT NULL,
+    related_item_id UUID NOT NULL,
+
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE,
+    CONSTRAINT fk_related_item FOREIGN KEY (related_item_id) REFERENCES item (id) ON DELETE CASCADE
+);
+
+-- cart
+CREATE TABLE IF NOT EXISTS cart (
+    id      SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS cart_item (
+    id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quantity INTEGER NOT NULL,
+
+    cart_id  BIGINT  NOT NULL,
+    item_id  UUID    NOT NULL,
+    CONSTRAINT fk_cart FOREIGN KEY (cart_id) REFERENCES cart (id) ON DELETE CASCADE,
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
 );
 
 -- orders
-CREATE TABLE IF NOT EXISTS cart_items
-(
-    id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    quantity   INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS "order" (
+    id             SERIAL PRIMARY KEY,
+    status         VARCHAR(50)    NOT NULL,
+    total_amount   DECIMAL(10, 2) NOT NULL,
+    fio            VARCHAR(255)   NOT NULL,
+    tel            VARCHAR(20)    NOT NULL,
+    email          VARCHAR(255)   NOT NULL,
+    address        VARCHAR(255)   NOT NULL,
+    delivery       VARCHAR(255)   NOT NULL,
+    payment_method VARCHAR(255)   NOT NULL,
+    user_id        UUID           NOT NULL,
 
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    cart_id    UUID    NOT NULL,
-    product_id UUID    NOT NULL,
-    FOREIGN KEY (cart_id) REFERENCES carts (id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES items (id) ON DELETE CASCADE
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at     TIMESTAMP WITH TIME ZONE
 );
 
-CREATE TABLE IF NOT EXISTS orders
-(
-    id           UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-
-    status       VARCHAR(50)    NOT NULL,
-    total_amount DECIMAL(10, 2) NOT NULL,
-
-    created_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    deleted_at   TIMESTAMP WITH TIME ZONE,
-
-    user_id      UUID           NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS order_items
-(
-    id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-
+CREATE TABLE IF NOT EXISTS order_item (
+    id         SERIAL PRIMARY KEY,
     quantity   INTEGER        NOT NULL,
     price      DECIMAL(10, 2) NOT NULL,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-    order_id   UUID           NOT NULL,
+    order_id   BIGINT         NOT NULL,
     item_id    UUID           NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS item_media
-(
-    id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    src     VARCHAR(255) NOT NULL,
-    alt     VARCHAR(255) NOT NULL,
-
-    item_id UUID,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS item_attrs
-(
-    id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name    VARCHAR(255) NOT NULL,
-    value   VARCHAR(255) NOT NULL,
-
-    item_id UUID,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS related_products
-(
-    PRIMARY KEY (item_id, related_item_id),
-    item_id         UUID,
-    related_item_id UUID,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE,
-    FOREIGN KEY (related_item_id) REFERENCES items (id) ON DELETE CASCADE
+    CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES "order" (id) ON DELETE CASCADE,
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
 );
 
 -- favorites
-CREATE TABLE IF NOT EXISTS favorites
-(
+CREATE TABLE IF NOT EXISTS favorites (
     user_id UUID NOT NULL,
     item_id UUID NOT NULL,
+
     PRIMARY KEY (user_id, item_id),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
--- blog
-CREATE TABLE IF NOT EXISTS blog_posts
-(
-    slug        VARCHAR(255) PRIMARY KEY UNIQUE NOT NULL,
-    title       VARCHAR(255)                    NOT NULL,
-    description TEXT,
-    src         VARCHAR(255),
-    alt         VARCHAR(255),
-
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    deleted_at  TIMESTAMP WITH TIME ZONE
-);
-
-CREATE TABLE IF NOT EXISTS blog_media
-(
-    id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    src       VARCHAR(255) NOT NULL,
-    alt       VARCHAR(255) NOT NULL,
-
-    blog_slug VARCHAR(255),
-    FOREIGN KEY (blog_slug) REFERENCES blog_posts (slug) ON DELETE CASCADE
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
 );
 
 -- promotion
-CREATE TABLE IF NOT EXISTS promotions
-(
+CREATE TABLE IF NOT EXISTS promotion (
     slug        VARCHAR(255) PRIMARY KEY,
     title       VARCHAR(255) NOT NULL,
     description TEXT         NOT NULL,
     src         VARCHAR(255) NOT NULL,
-    alt         VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS promotion_items
-(
-    promotion_slug VARCHAR(255),
-    item_id        UUID,
-    PRIMARY KEY (promotion_slug, item_id),
-    FOREIGN KEY (promotion_slug) REFERENCES promotions (slug) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
--- pages
-CREATE TABLE IF NOT EXISTS pages
-(
-    slug VARCHAR(255) PRIMARY KEY,
-    title VARCHAR(255),
-    href VARCHAR(255)
-);
-
--- SEO
-CREATE TABLE IF NOT EXISTS seo
-(
-    id             serial PRIMARY KEY,
-    title          VARCHAR(255) NOT NULL,
-    description    TEXT,
-    keywords       TEXT,
-    OGTitle        VARCHAR(255),
-    OGDescription  TEXT,
-
-    page_slug      VARCHAR(255),
-    FOREIGN KEY (page_slug) REFERENCES pages (slug) ON DELETE CASCADE,
-
-    promotion_slug VARCHAR(255),
-    FOREIGN KEY (promotion_slug) REFERENCES promotions (slug) ON DELETE CASCADE,
-
-    product_id     UUID,
-    FOREIGN KEY (product_id) REFERENCES items (id) ON DELETE CASCADE,
-
-    category_slug  VARCHAR(255),
-    FOREIGN KEY (category_slug) REFERENCES categories (slug) ON DELETE CASCADE
-
-);
-
--- banner
-CREATE TABLE IF NOT EXISTS banner
-(
-    id          serial PRIMARY KEY,
-
-    page_slug  VARCHAR(255),
-    FOREIGN KEY (page_slug) REFERENCES pages (slug) ON DELETE SET NULL,
-
-    promotion_slug VARCHAR(255),
-    FOREIGN KEY (promotion_slug) REFERENCES promotions (slug) ON DELETE CASCADE,
-
-    category_slug  VARCHAR(255),
-    FOREIGN KEY (category_slug) REFERENCES categories (slug) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS slides
-(
-    id          serial PRIMARY KEY,
-    title       VARCHAR(255) NOT NULL,
-    description TEXT         NOT NULL,
-    href        VARCHAR(255) NOT NULL,
-    scr         VARCHAR(255) NOT NULL,
     alt         VARCHAR(255),
-    buttonText  VARCHAR(255),
-    buttonHref  VARCHAR(255),
 
-    banner_id   INT,
-    FOREIGN KEY (banner_id) REFERENCES banner (id) ON DELETE CASCADE
+    lasts_to    TIMESTAMP    NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- partners
-CREATE TABLE IF NOT EXISTS partners
-(
-    id    serial PRIMARY KEY,
-    title VARCHAR(255) PRIMARY KEY,
-    href  VARCHAR(255),
-    scr   VARCHAR(255)
-);
+CREATE TABLE IF NOT EXISTS promotion_items (
+    discount       INTEGER      NOT NULL,
+    promotion_slug VARCHAR(255) NOT NULL,
+    item_id        UUID         NOT NULL,
 
--- reviews
-CREATE TABLE IF NOT EXISTS reviews
-(
-    id          serial PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT         NOT NULL
+    PRIMARY KEY (promotion_slug, item_id),
+    CONSTRAINT fk_promotion FOREIGN KEY (promotion_slug) REFERENCES promotion (slug) ON DELETE CASCADE,
+    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
 );

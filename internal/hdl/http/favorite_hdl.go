@@ -9,16 +9,26 @@ import (
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
 
-func RegisterFavoriteRoutes(r *mux.Router, h *Handler) {
-	r.HandleFunc("/api/favorite", middlewareFunc(h.listFavorites, h.authMiddleware)).Methods(http.MethodGet)
-	r.HandleFunc("/api/favorite", middlewareFunc(h.addToFavorites, h.authMiddleware)).Methods(http.MethodPost)
-	r.HandleFunc("/api/favorite", middlewareFunc(h.removeFromFavorites, h.authMiddleware)).Methods(http.MethodDelete)
+func RegisterFavoriteRoutes(mux *http.ServeMux, h *Handler) {
+	mux.HandleFunc(
+		"/api/favorite", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				middlewareFunc(h.listFavorites, h.authMiddleware)
+			case http.MethodPost:
+				middlewareFunc(h.addToFavorites, h.authMiddleware)
+			case http.MethodDelete:
+				middlewareFunc(h.removeFromFavorites, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
 }
 
 func (h *Handler) listFavorites(w http.ResponseWriter, r *http.Request) {

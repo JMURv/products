@@ -9,22 +9,45 @@ import (
 	"github.com/JMURv/par-pro/products/pkg/model"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/goccy/go-json"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func RegisterCategoryRoutes(r *mux.Router, h *Handler) {
-	r.HandleFunc("/api/category", h.listCategories).Methods(http.MethodGet)
-	r.HandleFunc("/api/category", middlewareFunc(h.createCategory, h.authMiddleware)).Methods(http.MethodPost)
-	r.HandleFunc("/api/category/search", h.categorySearch).Methods(http.MethodGet)
-	r.HandleFunc("/api/category/filters/search", h.categoryFiltersSearch).Methods(http.MethodGet)
-	r.HandleFunc("/api/category/{slug}", h.getCategory).Methods(http.MethodGet)
-	r.HandleFunc("/api/category/{slug}", middlewareFunc(h.updateCategory, h.authMiddleware)).Methods(http.MethodPut)
-	r.HandleFunc("/api/category/{slug}", middlewareFunc(h.deleteCategory, h.authMiddleware)).Methods(http.MethodDelete)
-	r.HandleFunc("/api/category/{slug}/filters", h.listCategoryFilters).Methods(http.MethodGet)
+func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
+	mux.HandleFunc("/api/category/search", h.categorySearch)
+	mux.HandleFunc("/api/category/filters/search", h.categoryFiltersSearch)
+	mux.HandleFunc("/api/category/filters/", h.listCategoryFilters)
+
+	mux.HandleFunc(
+		"/api/category", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.listCategories(w, r)
+			case http.MethodPost:
+				middlewareFunc(h.createCategory, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
+
+	mux.HandleFunc(
+		"/api/category/", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.getCategory(w, r)
+			case http.MethodPut:
+				middlewareFunc(h.updateCategory, h.authMiddleware)
+			case http.MethodDelete:
+				middlewareFunc(h.deleteCategory, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
 }
 
 func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +56,11 @@ func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) 
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
 
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
@@ -68,6 +96,11 @@ func (h *Handler) categorySearch(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
+
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
 		utils.SuccessResponse(w, c, []string{})
@@ -102,7 +135,12 @@ func (h *Handler) listCategoryFilters(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	res, err := h.ctrl.ListCategoryFilters(r.Context(), mux.Vars(r)["slug"])
+	if r.Method != http.MethodGet {
+		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+		return
+	}
+
+	res, err := h.ctrl.ListCategoryFilters(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/filters/"))
 	if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list category filters", zap.String("op", op), zap.Error(err))
@@ -181,7 +219,7 @@ func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	res, err := h.ctrl.GetCategoryBySlug(r.Context(), mux.Vars(r)["slug"])
+	res, err := h.ctrl.GetCategoryBySlug(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to found category", zap.String("op", op), zap.Error(err))
@@ -219,7 +257,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.ctrl.UpdateCategory(r.Context(), mux.Vars(r)["slug"], req)
+	err := h.ctrl.UpdateCategory(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"), req)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("category not found", zap.String("op", op), zap.Error(err))
@@ -232,7 +270,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessResponse(w, c, res)
+	utils.SuccessResponse(w, c, "OK")
 }
 
 func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
@@ -242,7 +280,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	err := h.ctrl.DeleteCategory(r.Context(), mux.Vars(r)["slug"])
+	err := h.ctrl.DeleteCategory(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("category not found", zap.String("op", op), zap.Error(err))

@@ -9,21 +9,43 @@ import (
 	"github.com/JMURv/par-pro/products/pkg/model"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/goccy/go-json"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func RegisterPromotionRoutes(r *mux.Router, h *Handler) {
-	r.HandleFunc("/api/promotions", h.listPromotions).Methods(http.MethodGet)
-	r.HandleFunc("/api/promotions", middlewareFunc(h.createPromotion, h.authMiddleware)).Methods(http.MethodPost)
-	r.HandleFunc("/api/promotions/search", h.promotionSearch).Methods(http.MethodGet)
-	r.HandleFunc("/api/promotions/{slug}", h.getPromotion).Methods(http.MethodGet)
-	r.HandleFunc("/api/promotions/{slug}", middlewareFunc(h.updatePromotion, h.authMiddleware)).Methods(http.MethodPut)
-	r.HandleFunc("/api/promotions/{slug}", middlewareFunc(h.deletePromotion, h.authMiddleware)).Methods(http.MethodDelete)
-	r.HandleFunc("/api/promotions/{slug}/items", h.listPromotionItems).Methods(http.MethodGet)
+func RegisterPromotionRoutes(mux *http.ServeMux, h *Handler) {
+	mux.HandleFunc("/api/promotions/search", h.promotionSearch)
+	mux.HandleFunc("/api/promotions/items/", h.listPromotionItems)
+	mux.HandleFunc(
+		"/api/promotions", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.listPromotions(w, r)
+			case http.MethodPost:
+				middlewareFunc(h.createPromotion, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
+
+	mux.HandleFunc(
+		"/api/promotions/", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				h.getPromotion(w, r)
+			case http.MethodPut:
+				middlewareFunc(h.updatePromotion, h.authMiddleware)
+			case http.MethodDelete:
+				middlewareFunc(h.deletePromotion, h.authMiddleware)
+			default:
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+			}
+		},
+	)
 }
 
 func (h *Handler) promotionSearch(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +54,12 @@ func (h *Handler) promotionSearch(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
+
+	if r.Method != http.MethodGet {
+		c = http.StatusMethodNotAllowed
+		utils.ErrResponse(w, c, ErrMethodNotAllowed)
+		return
+	}
 
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
@@ -67,6 +95,12 @@ func (h *Handler) listPromotionItems(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
+	if r.Method != http.MethodGet {
+		c = http.StatusMethodNotAllowed
+		utils.ErrResponse(w, c, ErrMethodNotAllowed)
+		return
+	}
+
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {
 		page = 1
@@ -77,7 +111,12 @@ func (h *Handler) listPromotionItems(w http.ResponseWriter, r *http.Request) {
 		size = consts.DefaultPageSize
 	}
 
-	res, err := h.ctrl.ListPromotionItems(r.Context(), mux.Vars(r)["slug"], page, size)
+	res, err := h.ctrl.ListPromotionItems(
+		r.Context(),
+		strings.TrimPrefix(r.URL.Path, "/api/promotions/items/"),
+		page,
+		size,
+	)
 	if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list promotion items", zap.String("op", op), zap.Error(err))
@@ -123,7 +162,7 @@ func (h *Handler) getPromotion(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	res, err := h.ctrl.GetPromotion(r.Context(), mux.Vars(r)["slug"])
+	res, err := h.ctrl.GetPromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"))
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
@@ -194,7 +233,7 @@ func (h *Handler) updatePromotion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.ctrl.UpdatePromotion(r.Context(), mux.Vars(r)["slug"], p)
+	err := h.ctrl.UpdatePromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"), p)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
@@ -207,7 +246,7 @@ func (h *Handler) updatePromotion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessResponse(w, c, res)
+	utils.SuccessResponse(w, c, "OK")
 }
 
 func (h *Handler) deletePromotion(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +256,7 @@ func (h *Handler) deletePromotion(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	err := h.ctrl.DeletePromotion(r.Context(), mux.Vars(r)["slug"])
+	err := h.ctrl.DeletePromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"))
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))

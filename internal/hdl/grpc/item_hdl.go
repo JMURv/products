@@ -147,7 +147,7 @@ func (h *Handler) GetItem(ctx context.Context, req *pb.UuidMsg) (*pb.ItemMsg, er
 	return mapper.ItemToProto(res), nil
 }
 
-func (h *Handler) CreateItem(ctx context.Context, req *pb.ItemMsg) (*pb.ItemMsg, error) {
+func (h *Handler) CreateItem(ctx context.Context, req *pb.ItemMsg) (*pb.UuidMsg, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.CreateItem.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -176,10 +176,10 @@ func (h *Handler) CreateItem(ctx context.Context, req *pb.ItemMsg) (*pb.ItemMsg,
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.ItemToProto(res), nil
+	return &pb.UuidMsg{Uuid: res.String()}, nil
 }
 
-func (h *Handler) UpdateItem(ctx context.Context, req *pb.ItemWithUid) (*pb.ItemMsg, error) {
+func (h *Handler) UpdateItem(ctx context.Context, req *pb.ItemWithUid) (*pb.Empty, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.UpdateItem.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -209,7 +209,7 @@ func (h *Handler) UpdateItem(ctx context.Context, req *pb.ItemWithUid) (*pb.Item
 		return nil, status.Errorf(c, err.Error())
 	}
 
-	res, err := h.ctrl.UpdateItem(ctx, uid, item)
+	err = h.ctrl.UpdateItem(ctx, uid, item)
 	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = codes.NotFound
 		return nil, status.Errorf(c, err.Error())
@@ -218,7 +218,7 @@ func (h *Handler) UpdateItem(ctx context.Context, req *pb.ItemWithUid) (*pb.Item
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.ItemToProto(res), nil
+	return &pb.Empty{}, nil
 }
 
 func (h *Handler) DeleteItem(ctx context.Context, req *pb.UuidMsg) (*pb.Empty, error) {

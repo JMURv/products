@@ -1,48 +1,43 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	conf "github.com/JMURv/par-pro/products/pkg/config"
-	"github.com/JMURv/par-pro/products/pkg/model"
+	dbutils "github.com/JMURv/par-pro/products/pkg/utils/db"
 	"go.uber.org/zap"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type Repository struct {
-	conn *gorm.DB
+	conn *sql.DB
 }
 
 func New(conf *conf.DBConfig) *Repository {
-	conn, err := gorm.Open(
-		postgres.Open(
-			fmt.Sprintf(
-				"postgres://%s:%s@%s:%v/%s",
-				conf.User,
-				conf.Password,
-				conf.Host,
-				conf.Port,
-				conf.Database,
-			),
-		), &gorm.Config{TranslateError: true},
+	conn, err := sql.Open(
+		"postgres", fmt.Sprintf(
+			"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+			conf.User,
+			conf.Password,
+			conf.Host,
+			conf.Port,
+			conf.Database,
+		),
 	)
 	if err != nil {
-		zap.L().Fatal("panic occurred", zap.Any("error", err))
+		zap.L().Fatal("Failed to connect to the database", zap.Error(err))
 	}
 
-	if err = conn.AutoMigrate(
-		&model.Item{},
-		&model.ItemMedia{},
-		&model.ItemAttribute{},
-		&model.RelatedProduct{},
-		&model.Category{},
-		&model.Filter{},
-		&model.Promotion{},
-		&model.PromotionItem{},
-		&model.Favorite{},
-	); err != nil {
-		zap.L().Fatal("panic occurred", zap.Any("error", err))
+	if err := conn.Ping(); err != nil {
+		zap.L().Fatal("Failed to ping the database", zap.Error(err))
 	}
-	
+
+	if err := dbutils.ApplyMigrations(conn, conf); err != nil {
+		zap.L().Fatal("Failed to apply migrations", zap.Error(err))
+	}
+
 	return &Repository{conn: conn}
+}
+
+func (r *Repository) Close() error {
+	return r.conn.Close()
 }

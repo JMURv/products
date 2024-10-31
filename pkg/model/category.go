@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/JMURv/par-pro/products/pkg/model/etc"
 	"github.com/JMURv/par-pro/products/pkg/model/seo"
-	"github.com/lib/pq"
 	"time"
 )
 
@@ -16,24 +15,24 @@ type PaginatedCategoryData struct {
 }
 
 type Category struct {
-	//ID              uint64 `json:"id" gorm:"primaryKey;unique;not null"`
-	Slug            string `json:"slug" gorm:"primaryKey;unique;not null"`
-	Title           string `json:"title" gorm:"type:varchar(255);unique;not null"`
+	ID              uint64 `json:"id"`
+	Slug            string `json:"slug"`
+	Title           string `json:"title"`
 	ProductQuantity int    `json:"product_quantity"`
-	Src             string `json:"src" gorm:"type:varchar(255)"`
-	Alt             string `json:"alt" gorm:"type:varchar(255)"`
+	Src             string `json:"src"`
+	Alt             string `json:"alt"`
 
-	ParentSlug     *string    `json:"parent_slug" gorm:"type:varchar(255)"`
-	ParentCategory *Category  `json:"parent_category" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
-	Children       []Category `json:"children" gorm:"foreignKey:ParentSlug;constraint:OnDelete:SET NULL"`
+	ParentSlug     string     `json:"parent_slug"`
+	ParentCategory *Category  `json:"parent_category"`
+	Children       []Category `json:"children"`
 
-	Banner  *etc.Banner `json:"banner" gorm:"-"`
-	SEO     *seo.SEO    `json:"seo" gorm:"-"`
-	Items   []*Item     `json:"items" gorm:"many2many:item_categories;constraint:OnDelete:SET NULL"`
-	Filters []Filter    `json:"filters" gorm:"foreignKey:CategorySlug;constraint:OnDelete:CASCADE"`
+	Banner  etc.Banner `json:"banner"`
+	SEO     seo.SEO    `json:"seo"`
+	Items   []Item     `json:"items"`
+	Filters []Filter   `json:"filters"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PaginatedFilterData struct {
@@ -45,16 +44,16 @@ type PaginatedFilterData struct {
 }
 
 type Filter struct {
-	ID     uint64         `json:"id" gorm:"primaryKey"`
-	Name   string         `json:"name" gorm:"type:varchar(255)"`
-	Values pq.StringArray `json:"values" gorm:"type:varchar(255)[]"`
+	ID     uint64   `json:"id"`
+	Name   string   `json:"name"`
+	Values []string `json:"values"`
 
-	FilterType string   `json:"filter_type" gorm:"type:varchar(50)"` // "equality", "range"
-	MinValue   *float64 `json:"min_value" gorm:""`                   // For range filters, specify the minimum value (e.g., min price)
-	MaxValue   *float64 `json:"max_value" gorm:""`                   // For range filters, specify the maximum value (e.g., max price)
+	FilterType string  `json:"filter_type"` // "equality", "range"
+	MinValue   float64 `json:"min_value"`   // For range filters, specify the minimum value (e.g., min price)
+	MaxValue   float64 `json:"max_value"`   // For range filters, specify the maximum value (e.g., max price)
 
-	CategorySlug string `json:"category_slug" gorm:"type:varchar(255)"`
+	CategorySlug string `json:"category_slug"`
 
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

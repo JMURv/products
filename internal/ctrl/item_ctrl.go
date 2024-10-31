@@ -25,26 +25,30 @@ const itemCategoryCacheKey = "items-category:%v:%v:%v:%v:%v"
 const invalidateItemRelatedCachePattern = "items-*"
 
 type itemRepo interface {
+	ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*md.PaginatedItemsData, error)
+	ItemAttrSearch(ctx context.Context, query string, size, page int) (res *md.PaginatedItemAttrData, err error)
+	ItemSearch(ctx context.Context, query string, size, page int) (*md.PaginatedItemsData, error)
+
 	ListItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
 	GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item, error)
-	CreateItem(ctx context.Context, i *md.Item) (*md.Item, error)
-	UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) (*md.Item, error)
+	CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, error)
+	UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) error
 	DeleteItem(ctx context.Context, uid uuid.UUID) error
 
-	ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*md.PaginatedItemsData, error)
 	ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md.RelatedProduct, error)
 
 	HitItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
 	RecItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
-
-	ItemSearch(ctx context.Context, query string, size, page int) (*md.PaginatedItemsData, error)
-	ItemAttrSearch(ctx context.Context, query string, size, page int) (res *md.PaginatedItemAttrData, err error)
 }
 
 func (c *Controller) invalidateItemRelatedCache() {
 	ctx := context.Background()
 	if err := c.cache.InvalidateKeysByPattern(ctx, invalidateItemRelatedCachePattern); err != nil {
-		zap.L().Debug("failed to invalidate cache", zap.String("key", invalidateItemRelatedCachePattern), zap.Error(err))
+		zap.L().Debug(
+			"failed to invalidate cache",
+			zap.String("key", invalidateItemRelatedCachePattern),
+			zap.Error(err),
+		)
 	}
 }
 
@@ -96,7 +100,12 @@ func (c *Controller) ItemAttrSearch(ctx context.Context, query string, size, pag
 	}
 
 	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemAttrSearchCacheKey, query, page, size), bytes); err != nil {
+		if err = c.cache.Set(
+			ctx,
+			consts.DefaultCacheTime,
+			fmt.Sprintf(itemAttrSearchCacheKey, query, page, size),
+			bytes,
+		); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
 		}
 	}
@@ -122,7 +131,12 @@ func (c *Controller) ItemSearch(ctx context.Context, query string, size, page in
 	}
 
 	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemSearchCacheKey, query, page, size), bytes); err != nil {
+		if err = c.cache.Set(
+			ctx,
+			consts.DefaultCacheTime,
+			fmt.Sprintf(itemSearchCacheKey, query, page, size),
+			bytes,
+		); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
 		}
 	}
@@ -231,7 +245,12 @@ func (c *Controller) ListItems(ctx context.Context, page, size int) (*md.Paginat
 	}
 
 	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemListCacheKey, page, size), bytes); err != nil {
+		if err = c.cache.Set(
+			ctx,
+			consts.DefaultCacheTime,
+			fmt.Sprintf(itemListCacheKey, page, size),
+			bytes,
+		); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
 		}
 	}
@@ -268,58 +287,50 @@ func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item
 	return res, nil
 }
 
-func (c *Controller) CreateItem(ctx context.Context, i *md.Item) (*md.Item, error) {
+func (c *Controller) CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, error) {
 	const op = "items.CreateItem.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	res, err := c.repo.CreateItem(ctx, i)
+	uid, err := c.repo.CreateItem(ctx, i)
 	if err != nil {
 		zap.L().Debug("failed to create item", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return uuid.Nil, err
 	}
 
-	if err := c.seo.CreateSEO(ctx, seo.Item.String(), res.ID.String(), i.SEO); err != nil {
+	if err := c.seo.CreateSEO(ctx, seo.Item.String(), uid.String(), &i.SEO); err != nil {
 		zap.L().Debug("failed to create item SEO", zap.Error(err), zap.String("op", op))
 	}
 
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, res.ID), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-
 	go c.invalidateItemRelatedCache()
-	return res, nil
+	return uid, nil
 }
 
-func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) (*md.Item, error) {
+func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) error {
 	const op = "items.UpdateItem.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	res, err := c.repo.UpdateItem(ctx, uid, i)
+	err := c.repo.UpdateItem(ctx, uid, i)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, ErrNotFound
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update item", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return err
 	}
 
-	if err := c.seo.UpdateSEO(ctx, seo.Item.String(), res.ID.String(), i.SEO); err != nil {
+	if err := c.seo.UpdateSEO(ctx, seo.Item.String(), uid.String(), &i.SEO); err != nil {
 		zap.L().Debug("failed to update item SEO", zap.Error(err), zap.String("op", op))
 	}
 
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, uid), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
+	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {
+		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
 	}
 
 	go c.invalidateItemRelatedCache()
-	return res, nil
+	return nil
 }
 
 func (c *Controller) DeleteItem(ctx context.Context, uid uuid.UUID) error {

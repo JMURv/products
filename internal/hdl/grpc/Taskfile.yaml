@@ -7,12 +7,12 @@ tasks:
     cmds:
       - mockgen -source="grpc.go" -destination="mocks/mock_repos.go" -package=mocks
 
-  test:
+  t:
     desc: Run app
     cmds:
       - "go test"
 
-  cover:
+  cov:
     desc: Run coverage
     cmds:
       - "go test -coverprofile=cov.out ./... && go tool cover -func=cov.out"

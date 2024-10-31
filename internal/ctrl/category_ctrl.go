@@ -25,8 +25,8 @@ const invalidateCategoryRelatedCachePattern = "categories-*"
 type categoryRepo interface {
 	ListCategories(ctx context.Context, page, size int) (*model.PaginatedCategoryData, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (*model.Category, error)
-	CreateCategory(ctx context.Context, c *model.Category) (*model.Category, error)
-	UpdateCategory(ctx context.Context, slug string, c *model.Category) (*model.Category, error)
+	CreateCategory(ctx context.Context, c *model.Category) (string, error)
+	UpdateCategory(ctx context.Context, slug string, c *model.Category) error
 	DeleteCategory(ctx context.Context, slug string) error
 
 	ListCategoryFilters(ctx context.Context, slug string) ([]*model.Filter, error)
@@ -38,7 +38,11 @@ type categoryRepo interface {
 func (c *Controller) invalidateCategoryRelatedCache() {
 	ctx := context.Background()
 	if err := c.cache.InvalidateKeysByPattern(ctx, invalidateCategoryRelatedCachePattern); err != nil {
-		zap.L().Debug("failed to invalidate cache", zap.String("key", invalidateCategoryRelatedCachePattern), zap.Error(err))
+		zap.L().Debug(
+			"failed to invalidate cache",
+			zap.String("key", invalidateCategoryRelatedCachePattern),
+			zap.Error(err),
+		)
 	}
 }
 
@@ -176,73 +180,61 @@ func (c *Controller) GetCategoryBySlug(ctx context.Context, slug string) (*model
 	return res, nil
 }
 
-func (c *Controller) CreateCategory(ctx context.Context, category *model.Category) (*model.Category, error) {
+func (c *Controller) CreateCategory(ctx context.Context, category *model.Category) (string, error) {
 	const op = "category.CreateCategory.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
 	category.Slug = slugify.Slugify(category.Title)
-	res, err := c.repo.CreateCategory(ctx, category)
+	slug, err := c.repo.CreateCategory(ctx, category)
 	if err != nil {
 		zap.L().Debug("failed to create category", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return "", err
 	}
 
-	if err := c.etc.CreateBanner(ctx, etc.Category.String(), res.Slug, category.Banner); err != nil {
+	if err = c.etc.CreateBanner(ctx, etc.Category.String(), slug, &category.Banner); err != nil {
 		zap.L().Debug("failed to create category banner", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return "", err
 	}
 
-	if err := c.seo.CreateSEO(ctx, seo.Category.String(), res.Slug, category.SEO); err != nil {
+	if err = c.seo.CreateSEO(ctx, seo.Category.String(), slug, &category.SEO); err != nil {
 		zap.L().Debug("failed to create category SEO", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(categoryCacheKey, res.Slug), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err))
-		}
-	}
-
-	if err := c.cache.Delete(ctx, fmt.Sprintf(categoryCacheKey, res.ParentSlug)); err != nil {
-		zap.L().Debug("failed to delete from cache", zap.Error(err))
+		return "", err
 	}
 
 	go c.invalidateCategoryRelatedCache()
-	return res, nil
+	return slug, nil
 }
 
-func (c *Controller) UpdateCategory(ctx context.Context, slug string, category *model.Category) (*model.Category, error) {
+func (c *Controller) UpdateCategory(ctx context.Context, slug string, category *model.Category) error {
 	const op = "category.UpdateCategory.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	res, err := c.repo.UpdateCategory(ctx, slug, category)
+	err := c.repo.UpdateCategory(ctx, slug, category)
 	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return nil, ErrNotFound
+		return ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to update category", zap.Error(err), zap.String("op", op))
-		return nil, err
+		return err
 	}
 
-	if err := c.etc.UpdateBanner(ctx, etc.Category.String(), res.Slug, category.Banner); err != nil {
+	if err := c.etc.UpdateBanner(ctx, etc.Category.String(), slug, &category.Banner); err != nil {
 		zap.L().Debug("failed to update category banner", zap.Error(err), zap.String("op", op))
 	}
 
-	if err := c.seo.UpdateSEO(ctx, seo.Category.String(), res.Slug, res.SEO); err != nil {
+	if err := c.seo.UpdateSEO(ctx, seo.Category.String(), slug, &category.SEO); err != nil {
 		zap.L().Debug("failed to update category SEO", zap.Error(err), zap.String("op", op))
 	}
 
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(categoryCacheKey, res.Slug), bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err))
-		}
+	if err = c.cache.Delete(ctx, fmt.Sprintf(categoryCacheKey, slug)); err != nil {
+		zap.L().Debug("failed to delete from cache", zap.Error(err))
 	}
 
 	go c.invalidateCategoryRelatedCache()
-	return res, nil
+	return nil
 }
 
 func (c *Controller) DeleteCategory(ctx context.Context, slug string) error {
@@ -259,11 +251,11 @@ func (c *Controller) DeleteCategory(ctx context.Context, slug string) error {
 		return err
 	}
 
-	if err := c.etc.DeleteBanner(ctx, etc.Category.String(), slug); err != nil {
+	if err = c.etc.DeleteBanner(ctx, etc.Category.String(), slug); err != nil {
 		zap.L().Debug("failed to delete category banner", zap.Error(err), zap.String("op", op))
 	}
 
-	if err := c.seo.DeleteSEO(ctx, seo.Category.String(), slug); err != nil {
+	if err = c.seo.DeleteSEO(ctx, seo.Category.String(), slug); err != nil {
 		zap.L().Debug("failed to delete category SEO", zap.Error(err), zap.String("op", op))
 	}
 
