@@ -40,7 +40,7 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 		},
 	}
 
-	if req.ParentItemID != nil {
+	if req.ParentItemID != uuid.Nil {
 		item.ParentItemId = req.ParentItemID.String()
 	}
 
@@ -76,7 +76,7 @@ func ItemToProto(req *md.Item) *pb.ItemMsg {
 	if len(req.Categories) > 0 {
 		res := make([]*pb.CategoryMsg, len(req.Categories))
 		for i, v := range req.Categories {
-			res[i] = CategoryToProto(v)
+			res[i] = CategoryToProto(&v)
 		}
 		item.Categories = res
 	}
@@ -186,13 +186,13 @@ func ItemFromProto(req *pb.ItemMsg) *md.Item {
 	if err != nil {
 		zap.L().Debug("failed to parse parent item id")
 	} else {
-		modelItem.ParentItemID = &parentItemID
+		modelItem.ParentItemID = parentItemID
 	}
 
 	if len(req.Categories) > 0 {
-		res := make([]*md.Category, len(req.Categories))
+		res := make([]md.Category, len(req.Categories))
 		for i, v := range req.Categories {
-			res[i] = CategoryFromProto(v)
+			res[i] = *CategoryFromProto(v)
 		}
 		modelItem.Categories = res
 	}

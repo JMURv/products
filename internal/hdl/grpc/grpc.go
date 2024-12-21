@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	pb "github.com/JMURv/par-pro/products/api/pb"
-	"github.com/JMURv/par-pro/products/internal/ctrl"
-	ssoCtrl "github.com/JMURv/par-pro/products/internal/ctrl/sso/grpc"
+	"github.com/JMURv/par-pro/products/internal/ctrl/sso"
+	"github.com/JMURv/par-pro/products/internal/hdl"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	pm "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"go.uber.org/zap"
@@ -25,11 +25,11 @@ type Handler struct {
 	pb.FavoriteServer
 	srv  *grpc.Server
 	hsrv *health.Server
-	ctrl *ctrl.Controller
-	sso  *ssoCtrl.SSOCtrl
+	ctrl hdl.Ctrl
+	sso  sso.SSOSvc
 }
 
-func New(ctrl *ctrl.Controller, sso *ssoCtrl.SSOCtrl) *Handler {
+func New(ctrl hdl.Ctrl, sso sso.SSOSvc) *Handler {
 	srv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			AuthUnaryInterceptor(sso),
@@ -72,7 +72,7 @@ func (h *Handler) Close() error {
 	return nil
 }
 
-func AuthUnaryInterceptor(sso *ssoCtrl.SSOCtrl) grpc.UnaryServerInterceptor {
+func AuthUnaryInterceptor(sso sso.SSOSvc) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

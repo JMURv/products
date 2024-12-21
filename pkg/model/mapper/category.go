@@ -21,7 +21,7 @@ func CategoryToProto(req *md.Category) *pb.CategoryMsg {
 		ProductQuantity:    uint64(req.ProductQuantity),
 		Src:                req.Src,
 		Alt:                req.Alt,
-		ParentSlug:         *req.ParentSlug,
+		ParentSlug:         req.ParentSlug,
 		Parent_CategoryMsg: CategoryToProto(req.ParentCategory),
 		CreatedAt: &timestamppb.Timestamp{
 			Seconds: req.CreatedAt.Unix(),
@@ -41,29 +41,31 @@ func CategoryToProto(req *md.Category) *pb.CategoryMsg {
 
 	if len(req.Items) > 0 {
 		for _, v := range req.Items {
-			res.Items = append(res.Items, ItemToProto(v))
+			res.Items = append(res.Items, ItemToProto(&v))
 		}
 	}
 
 	if len(req.Filters) > 0 {
 		for _, v := range req.Filters {
-			res.Filters = append(res.Filters, &pb.Filter{
-				Id:           v.ID,
-				Name:         v.Name,
-				Values:       v.Values,
-				CategorySlug: v.CategorySlug,
-				FilterType:   v.FilterType,
-				MinValue:     float32(*v.MinValue),
-				MaxValue:     float32(*v.MaxValue),
-				CreatedAt: &timestamppb.Timestamp{
-					Seconds: v.CreatedAt.Unix(),
-					Nanos:   int32(v.CreatedAt.Nanosecond()),
+			res.Filters = append(
+				res.Filters, &pb.Filter{
+					Id:           v.ID,
+					Name:         v.Name,
+					Values:       v.Values,
+					CategorySlug: v.CategorySlug,
+					FilterType:   v.FilterType,
+					MinValue:     float32(v.MinValue),
+					MaxValue:     float32(v.MaxValue),
+					CreatedAt: &timestamppb.Timestamp{
+						Seconds: v.CreatedAt.Unix(),
+						Nanos:   int32(v.CreatedAt.Nanosecond()),
+					},
+					UpdatedAt: &timestamppb.Timestamp{
+						Seconds: v.UpdatedAt.Unix(),
+						Nanos:   int32(v.UpdatedAt.Nanosecond()),
+					},
 				},
-				UpdatedAt: &timestamppb.Timestamp{
-					Seconds: v.UpdatedAt.Unix(),
-					Nanos:   int32(v.UpdatedAt.Nanosecond()),
-				},
-			})
+			)
 		}
 	}
 
@@ -77,7 +79,7 @@ func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
 		ProductQuantity: int(req.ProductQuantity),
 		Src:             req.Src,
 		Alt:             req.Alt,
-		ParentSlug:      &req.ParentSlug,
+		ParentSlug:      req.ParentSlug,
 		CreatedAt:       req.CreatedAt.AsTime(),
 		UpdatedAt:       req.UpdatedAt.AsTime(),
 	}
@@ -94,7 +96,8 @@ func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
 
 	if len(req.Items) > 0 {
 		for _, v := range req.Items {
-			res.Items = append(res.Items, ItemFromProto(v))
+			itm := ItemFromProto(v)
+			res.Items = append(res.Items, *itm)
 		}
 	}
 
@@ -102,17 +105,19 @@ func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
 		for _, v := range req.Filters {
 			minVal := float64(v.MinValue)
 			maxVal := float64(v.MaxValue)
-			res.Filters = append(res.Filters, md.Filter{
-				ID:           v.Id,
-				Name:         v.Name,
-				Values:       v.Values,
-				CategorySlug: v.CategorySlug,
-				FilterType:   v.FilterType,
-				MinValue:     &minVal,
-				MaxValue:     &maxVal,
-				CreatedAt:    v.CreatedAt.AsTime(),
-				UpdatedAt:    v.UpdatedAt.AsTime(),
-			})
+			res.Filters = append(
+				res.Filters, md.Filter{
+					ID:           v.Id,
+					Name:         v.Name,
+					Values:       v.Values,
+					CategorySlug: v.CategorySlug,
+					FilterType:   v.FilterType,
+					MinValue:     minVal,
+					MaxValue:     maxVal,
+					CreatedAt:    v.CreatedAt.AsTime(),
+					UpdatedAt:    v.UpdatedAt.AsTime(),
+				},
+			)
 		}
 	}
 
@@ -122,8 +127,8 @@ func CategoryFromProto(req *pb.CategoryMsg) *md.Category {
 func ListFiltersToProto(req []*md.Filter) []*pb.Filter {
 	res := make([]*pb.Filter, len(req))
 	for i, v := range req {
-		minVal := float32(*v.MinValue)
-		maxVal := float32(*v.MaxValue)
+		minVal := float32(v.MinValue)
+		maxVal := float32(v.MaxValue)
 		res[i] = &pb.Filter{
 			Id:           v.ID,
 			Name:         v.Name,

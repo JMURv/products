@@ -142,7 +142,7 @@ func (h *Handler) GetPromotion(ctx context.Context, req *pb.SlugMsg) (*pb.PromoM
 	return mapper.PromoToProto(res), nil
 }
 
-func (h *Handler) CreatePromotion(ctx context.Context, req *pb.PromoMsg) (*pb.PromoMsg, error) {
+func (h *Handler) CreatePromotion(ctx context.Context, req *pb.PromoMsg) (*pb.SlugMsg, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.CreatePromotion.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -171,10 +171,10 @@ func (h *Handler) CreatePromotion(ctx context.Context, req *pb.PromoMsg) (*pb.Pr
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.PromoToProto(res), nil
+	return &pb.SlugMsg{Slug: res}, nil
 }
 
-func (h *Handler) UpdatePromotion(ctx context.Context, req *pb.PromoWithSlug) (*pb.PromoMsg, error) {
+func (h *Handler) UpdatePromotion(ctx context.Context, req *pb.PromoWithSlug) (*pb.Empty, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.UpdatePromotion.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -196,7 +196,7 @@ func (h *Handler) UpdatePromotion(ctx context.Context, req *pb.PromoWithSlug) (*
 		return nil, status.Errorf(c, err.Error())
 	}
 
-	res, err := h.ctrl.UpdatePromotion(ctx, req.Slug, obj)
+	err := h.ctrl.UpdatePromotion(ctx, req.Slug, obj)
 	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = codes.NotFound
 		return nil, status.Errorf(c, err.Error())
@@ -205,7 +205,7 @@ func (h *Handler) UpdatePromotion(ctx context.Context, req *pb.PromoWithSlug) (*
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.PromoToProto(res), nil
+	return &pb.Empty{}, nil
 }
 
 func (h *Handler) DeletePromotion(ctx context.Context, req *pb.SlugMsg) (*pb.Empty, error) {

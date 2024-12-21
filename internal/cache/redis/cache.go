@@ -18,12 +18,14 @@ type Cache struct {
 	cli *redis.Client
 }
 
-func New(conf *cfg.RedisConfig) ctrl.CacheRepo {
-	redisCli := redis.NewClient(&redis.Options{
-		Addr:     conf.Addr,
-		Password: conf.Pass,
-		DB:       0,
-	})
+func New(conf *cfg.RedisConfig) ctrl.CacheService {
+	redisCli := redis.NewClient(
+		&redis.Options{
+			Addr:     conf.Addr,
+			Password: conf.Pass,
+			DB:       0,
+		},
+	)
 	_, err := redisCli.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/JMURv/par-pro/products/internal/ctrl"
-	ssoCtrl "github.com/JMURv/par-pro/products/internal/ctrl/sso/grpc"
+	"github.com/JMURv/par-pro/products/internal/ctrl/sso"
+	"github.com/JMURv/par-pro/products/internal/hdl"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -16,11 +16,11 @@ import (
 
 type Handler struct {
 	srv  *http.Server
-	ctrl *ctrl.Controller
-	sso  *ssoCtrl.SSOCtrl
+	ctrl hdl.Ctrl
+	sso  sso.SSOSvc
 }
 
-func New(ctrl *ctrl.Controller, sso *ssoCtrl.SSOCtrl) *Handler {
+func New(ctrl hdl.Ctrl, sso sso.SSOSvc) *Handler {
 	return &Handler{
 		ctrl: ctrl,
 		sso:  sso,

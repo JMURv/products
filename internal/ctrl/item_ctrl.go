@@ -7,7 +7,7 @@ import (
 	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
-	md "github.com/JMURv/par-pro/products/pkg/model"
+	"github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -25,20 +25,20 @@ const itemCategoryCacheKey = "items-category:%v:%v:%v:%v:%v"
 const invalidateItemRelatedCachePattern = "items-*"
 
 type itemRepo interface {
-	ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*md.PaginatedItemsData, error)
-	ItemAttrSearch(ctx context.Context, query string, size, page int) (res *md.PaginatedItemAttrData, err error)
-	ItemSearch(ctx context.Context, query string, size, page int) (*md.PaginatedItemsData, error)
+	ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*model.PaginatedItemsData, error)
+	ItemAttrSearch(ctx context.Context, query string, size, page int) (res *model.PaginatedItemAttrData, err error)
+	ItemSearch(ctx context.Context, query string, size, page int) (*model.PaginatedItemsData, error)
 
-	ListItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
-	GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item, error)
-	CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, error)
-	UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) error
+	ListItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
+	GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error)
+	CreateItem(ctx context.Context, i *model.Item) (uuid.UUID, error)
+	UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Item) error
 	DeleteItem(ctx context.Context, uid uuid.UUID) error
 
-	ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md.RelatedProduct, error)
+	ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*model.RelatedProduct, error)
 
-	HitItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
-	RecItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error)
+	HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
+	RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
 }
 
 func (c *Controller) invalidateItemRelatedCache() {
@@ -52,13 +52,13 @@ func (c *Controller) invalidateItemRelatedCache() {
 	}
 }
 
-func (c *Controller) ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*md.PaginatedItemsData, error) {
+func (c *Controller) ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*model.PaginatedItemsData, error) {
 	const op = "items.ListCategoryItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemsData{}
+	cached := &model.PaginatedItemsData{}
 	cacheKey := fmt.Sprintf(itemCategoryCacheKey, slug, page, size, filters, sort)
 	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
@@ -82,13 +82,13 @@ func (c *Controller) ListCategoryItems(ctx context.Context, slug string, page, s
 	return res, nil
 }
 
-func (c *Controller) ItemAttrSearch(ctx context.Context, query string, size, page int) (*md.PaginatedItemAttrData, error) {
+func (c *Controller) ItemAttrSearch(ctx context.Context, query string, size, page int) (*model.PaginatedItemAttrData, error) {
 	const op = "items.ItemAttrSearch.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemAttrData{}
+	cached := &model.PaginatedItemAttrData{}
 	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemAttrSearchCacheKey, query, page, size), &cached); err == nil {
 		return cached, nil
 	}
@@ -113,13 +113,13 @@ func (c *Controller) ItemAttrSearch(ctx context.Context, query string, size, pag
 	return res, nil
 }
 
-func (c *Controller) ItemSearch(ctx context.Context, query string, size, page int) (*md.PaginatedItemsData, error) {
+func (c *Controller) ItemSearch(ctx context.Context, query string, page, size int) (*model.PaginatedItemsData, error) {
 	const op = "items.Search.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemsData{}
+	cached := &model.PaginatedItemsData{}
 	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemSearchCacheKey, query, page, size), &cached); err == nil {
 		return cached, nil
 	}
@@ -144,13 +144,13 @@ func (c *Controller) ItemSearch(ctx context.Context, query string, size, page in
 	return res, nil
 }
 
-func (c *Controller) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md.RelatedProduct, error) {
+func (c *Controller) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*model.RelatedProduct, error) {
 	const op = "items.ListRelatedItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := make([]*md.RelatedProduct, 0, 15)
+	cached := make([]*model.RelatedProduct, 0, 15)
 	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(relatedItemCacheKey, uid), &cached); err == nil {
 		return cached, nil
 	}
@@ -173,13 +173,13 @@ func (c *Controller) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md
 	return res, nil
 }
 
-func (c *Controller) HitItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
+func (c *Controller) HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
 	const op = "items.HitItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemsData{}
+	cached := &model.PaginatedItemsData{}
 	if err := c.cache.GetToStruct(ctx, hitKey, &cached); err == nil {
 		return cached, nil
 	}
@@ -200,13 +200,13 @@ func (c *Controller) HitItems(ctx context.Context, page, size int) (*md.Paginate
 
 }
 
-func (c *Controller) RecItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
+func (c *Controller) RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
 	const op = "items.RecItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemsData{}
+	cached := &model.PaginatedItemsData{}
 	if err := c.cache.GetToStruct(ctx, recKey, &cached); err == nil {
 		return cached, nil
 	}
@@ -227,13 +227,13 @@ func (c *Controller) RecItems(ctx context.Context, page, size int) (*md.Paginate
 
 }
 
-func (c *Controller) ListItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
+func (c *Controller) ListItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
 	const op = "items.ListItems.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.PaginatedItemsData{}
+	cached := &model.PaginatedItemsData{}
 	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemListCacheKey, page, size), cached); err == nil {
 		return cached, nil
 	}
@@ -258,13 +258,13 @@ func (c *Controller) ListItems(ctx context.Context, page, size int) (*md.Paginat
 	return res, nil
 }
 
-func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item, error) {
+func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error) {
 	const op = "items.GetItemByUUID.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
-	cached := &md.Item{}
+	cached := &model.Item{}
 	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemCacheKey, uid), cached); err == nil {
 		return cached, nil
 	}
@@ -287,7 +287,7 @@ func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*md.Item
 	return res, nil
 }
 
-func (c *Controller) CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, error) {
+func (c *Controller) CreateItem(ctx context.Context, i *model.Item) (uuid.UUID, error) {
 	const op = "items.CreateItem.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -307,7 +307,7 @@ func (c *Controller) CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, err
 	return uid, nil
 }
 
-func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *md.Item) error {
+func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Item) error {
 	const op = "items.UpdateItem.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)

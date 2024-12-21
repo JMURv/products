@@ -187,7 +187,7 @@ func (h *Handler) itemSearch(w http.ResponseWriter, r *http.Request) {
 		page = 1
 	}
 
-	res, err := h.ctrl.ItemSearch(r.Context(), query, size, page)
+	res, err := h.ctrl.ItemSearch(r.Context(), query, page, size)
 	if err != nil {
 		zap.L().Debug("failed to search items", zap.String("op", op), zap.String("query", query), zap.Error(err))
 		c = http.StatusInternalServerError
@@ -207,7 +207,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			zap.L().Error("panic", zap.Any("err", err))
+			zap.L().Error("panic", zap.Any("err", err), zap.String("op", op))
 			c = http.StatusInternalServerError
 			utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		}

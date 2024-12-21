@@ -3,7 +3,7 @@ module github.com/JMURv/par-pro/products
 go 1.23.1
 
 require (
-	github.com/JMURv/protos v1.1.1
+	github.com/JMURv/protos v1.1.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/golang-migrate/migrate/v4 v4.18.1
@@ -36,6 +36,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/mock v0.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

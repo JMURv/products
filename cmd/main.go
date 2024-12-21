@@ -7,7 +7,7 @@ import (
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
 	etc_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/etc/grpc"
 	seo_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/seo/grpc"
-	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso/grpc"
+	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso"
 	"github.com/JMURv/par-pro/products/internal/discovery"
 
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"

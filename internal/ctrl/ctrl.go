@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type appRepo interface {
+type AppRepo interface {
 	itemRepo
 	categoryRepo
 	promotionRepo
@@ -20,7 +20,7 @@ type Discovery interface {
 	FindServiceByName(ctx context.Context, name string) (string, error)
 }
 
-type CacheRepo interface {
+type CacheService interface {
 	GetCode(ctx context.Context, key string) (int, error)
 	GetToStruct(ctx context.Context, key string, dest any) error
 	Set(ctx context.Context, t time.Duration, key string, val any) error
@@ -30,13 +30,13 @@ type CacheRepo interface {
 }
 
 type Controller struct {
-	repo  appRepo
-	cache CacheRepo
+	repo  AppRepo
+	cache CacheService
 	seo   seo.SEOCtrl
 	etc   etc.EtcCtrl
 }
 
-func New(repo appRepo, cache CacheRepo, seo seo.SEOCtrl, etc etc.EtcCtrl) *Controller {
+func New(repo AppRepo, cache CacheService, seo seo.SEOCtrl, etc etc.EtcCtrl) *Controller {
 	return &Controller{
 		repo:  repo,
 		cache: cache,

@@ -16,6 +16,25 @@ tasks:
     cmds:
       - "protoc --go_out=. --go-grpc_out=. --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative api/pb/products.proto"
 
+  t-hdl:
+    desc: Test handlers
+    cmds:
+      - "go test ./internal/hdl/http"
+      - "go test -coverprofile=cov.out ./internal/hdl/http && go tool cover -func=cov.out"
+
+  t-hdl-html:
+    desc: Run coverage
+    cmds:
+      - "go test -coverprofile=cov.out ./internal/hdl/http && go tool cover -html=cov.out"
+
+  mocks:
+    desc: Generate mocks
+    cmds:
+      - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
+      - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
+      - mockgen -source="./internal/ctrl/seo/seo.go" -destination="mocks/mock_seo.go" -package=mocks
+      - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
+
   build:
     desc: Build app
     cmds:
@@ -25,22 +44,6 @@ tasks:
     desc: Push image to docker registry
     cmds:
       - "docker push {{.USERNAME}}/{{.IMAGE_NAME}}:latest"
-
-  all:
-    desc: Run all
-    cmds:
-      - "task db redis"
-
-  db:
-    desc: Run dev db
-    cmds:
-      - "docker run -d --rm --name par_pro_users_db \
-        -p 5432:5432 \
-        -e POSTGRES_PASSWORD=794613825Zx! \
-        -e POSTGRES_DB=par_pro_users_db \
-        -e POSTGRES_USER=postgres \
-        -v pg_data_par_pro_users:/var/lib/postgresql/data \
-        postgres:15.0-alpine"
 
   redis:
     desc: Run redis

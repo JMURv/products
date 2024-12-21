@@ -166,7 +166,7 @@ func (h *Handler) GetCategory(ctx context.Context, req *pb.SlugMsg) (*pb.Categor
 	return mapper.CategoryToProto(res), nil
 }
 
-func (h *Handler) CreateCategory(ctx context.Context, req *pb.CategoryMsg) (*pb.CategoryMsg, error) {
+func (h *Handler) CreateCategory(ctx context.Context, req *pb.CategoryMsg) (*pb.SlugMsg, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.CreateCategory.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -195,10 +195,10 @@ func (h *Handler) CreateCategory(ctx context.Context, req *pb.CategoryMsg) (*pb.
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.CategoryToProto(res), nil
+	return &pb.SlugMsg{Slug: res}, nil
 }
 
-func (h *Handler) UpdateCategory(ctx context.Context, req *pb.CategoryWithSlug) (*pb.CategoryMsg, error) {
+func (h *Handler) UpdateCategory(ctx context.Context, req *pb.CategoryWithSlug) (*pb.Empty, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.UpdateCategory.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -221,7 +221,7 @@ func (h *Handler) UpdateCategory(ctx context.Context, req *pb.CategoryWithSlug) 
 		return nil, status.Errorf(c, err.Error())
 	}
 
-	res, err := h.ctrl.UpdateCategory(ctx, req.Slug, obj)
+	err := h.ctrl.UpdateCategory(ctx, req.Slug, obj)
 	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = codes.NotFound
 		return nil, status.Errorf(c, err.Error())
@@ -230,7 +230,7 @@ func (h *Handler) UpdateCategory(ctx context.Context, req *pb.CategoryWithSlug) 
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
 	}
 
-	return mapper.CategoryToProto(res), nil
+	return &pb.Empty{}, nil
 }
 
 func (h *Handler) DeleteCategory(ctx context.Context, req *pb.SlugMsg) (*pb.Empty, error) {
