@@ -5,19 +5,15 @@ import (
 	"fmt"
 	"github.com/JMURv/par-pro/products/internal/cache/redis"
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
-	etc_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/etc/grpc"
-	seo_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/seo/grpc"
 	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso"
 	"github.com/JMURv/par-pro/products/internal/discovery"
-
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
 	handler "github.com/JMURv/par-pro/products/internal/hdl/http"
 	tracing "github.com/JMURv/par-pro/products/internal/metrics/jaeger"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
-	"go.uber.org/zap"
-	//mem "github.com/JMURv/par-pro/products/internal/repository/memory"
 	db "github.com/JMURv/par-pro/products/internal/repo/db"
 	cfg "github.com/JMURv/par-pro/products/pkg/config"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
@@ -65,9 +61,7 @@ func main() {
 	repo := db.New(conf.DB)
 
 	ssoCtrl := sso_ctrl_grpc.New(dscvry)
-	seoCtrl := seo_ctrl_grpc.New(dscvry)
-	etcCtrl := etc_ctrl_grpc.New(dscvry)
-	svc := ctrl.New(repo, cache, seoCtrl, etcCtrl)
+	svc := ctrl.New(repo, cache)
 	h := handler.New(svc, ssoCtrl)
 
 	// Graceful shutdown
@@ -91,6 +85,8 @@ func main() {
 	}()
 
 	// Start service
-	zap.L().Info(fmt.Sprintf("Starting server on %v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port))
+	zap.L().Info(
+		fmt.Sprintf("Starting server on %v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
+	)
 	h.Start(conf.Server.Port)
 }

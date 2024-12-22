@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/JMURv/par-pro/products/internal/ctrl/etc"
-	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -35,43 +33,6 @@ type categoryRepo interface {
 	CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (res *model.PaginatedFilterData, err error)
 }
 
-func (c *Controller) invalidateCategoryRelatedCache() {
-	ctx := context.Background()
-	if err := c.cache.InvalidateKeysByPattern(ctx, invalidateCategoryRelatedCachePattern); err != nil {
-		zap.L().Debug(
-			"failed to invalidate cache",
-			zap.String("key", invalidateCategoryRelatedCachePattern),
-			zap.Error(err),
-		)
-	}
-}
-
-func (c *Controller) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedFilterData, error) {
-	const op = "category.categoryFiltersSearch.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cacheKey := fmt.Sprintf(categoryFiltersSearchCacheKey, query, page, size)
-	cached := &model.PaginatedFilterData{}
-	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.CategoryFiltersSearch(ctx, query, page, size)
-	if err != nil {
-		zap.L().Debug("failed to search filters", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-	return res, nil
-}
-
 func (c *Controller) CategorySearch(ctx context.Context, query string, page int, size int) (*model.PaginatedCategoryData, error) {
 	const op = "category.search.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
@@ -87,32 +48,6 @@ func (c *Controller) CategorySearch(ctx context.Context, query string, page int,
 	res, err := c.repo.CategorySearch(ctx, query, page, size)
 	if err != nil {
 		zap.L().Debug("failed to search categories", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-	return res, nil
-}
-
-func (c *Controller) ListCategoryFilters(ctx context.Context, slug string) ([]*model.Filter, error) {
-	const op = "category.ListCategoryFilters.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cacheKey := fmt.Sprintf(categoryFiltersListCacheKey, slug)
-	cached := make([]*model.Filter, 0, 15)
-	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.ListCategoryFilters(ctx, slug)
-	if err != nil {
-		zap.L().Debug("failed to list category filters", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
@@ -193,17 +128,7 @@ func (c *Controller) CreateCategory(ctx context.Context, category *model.Categor
 		return "", err
 	}
 
-	if err = c.etc.CreateBanner(ctx, etc.Category.String(), slug, &category.Banner); err != nil {
-		zap.L().Debug("failed to create category banner", zap.Error(err), zap.String("op", op))
-		return "", err
-	}
-
-	if err = c.seo.CreateSEO(ctx, seo.Category.String(), slug, &category.SEO); err != nil {
-		zap.L().Debug("failed to create category SEO", zap.Error(err), zap.String("op", op))
-		return "", err
-	}
-
-	go c.invalidateCategoryRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateCategoryRelatedCachePattern)
 	return slug, nil
 }
 
@@ -221,19 +146,11 @@ func (c *Controller) UpdateCategory(ctx context.Context, slug string, category *
 		return err
 	}
 
-	if err := c.etc.UpdateBanner(ctx, etc.Category.String(), slug, &category.Banner); err != nil {
-		zap.L().Debug("failed to update category banner", zap.Error(err), zap.String("op", op))
-	}
-
-	if err := c.seo.UpdateSEO(ctx, seo.Category.String(), slug, &category.SEO); err != nil {
-		zap.L().Debug("failed to update category SEO", zap.Error(err), zap.String("op", op))
-	}
-
 	if err = c.cache.Delete(ctx, fmt.Sprintf(categoryCacheKey, slug)); err != nil {
 		zap.L().Debug("failed to delete from cache", zap.Error(err))
 	}
 
-	go c.invalidateCategoryRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateCategoryRelatedCachePattern)
 	return nil
 }
 
@@ -251,18 +168,62 @@ func (c *Controller) DeleteCategory(ctx context.Context, slug string) error {
 		return err
 	}
 
-	if err = c.etc.DeleteBanner(ctx, etc.Category.String(), slug); err != nil {
-		zap.L().Debug("failed to delete category banner", zap.Error(err), zap.String("op", op))
-	}
-
-	if err = c.seo.DeleteSEO(ctx, seo.Category.String(), slug); err != nil {
-		zap.L().Debug("failed to delete category SEO", zap.Error(err), zap.String("op", op))
-	}
-
 	if err = c.cache.Delete(ctx, fmt.Sprintf(categoryCacheKey, slug)); err != nil {
 		zap.L().Debug("failed to delete from cache", zap.Error(err))
 	}
 
-	go c.invalidateCategoryRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateCategoryRelatedCachePattern)
 	return nil
+}
+
+func (c *Controller) CategoryFiltersSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedFilterData, error) {
+	const op = "category.categoryFiltersSearch.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cacheKey := fmt.Sprintf(categoryFiltersSearchCacheKey, query, page, size)
+	cached := &model.PaginatedFilterData{}
+	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
+		return cached, nil
+	}
+
+	res, err := c.repo.CategoryFiltersSearch(ctx, query, page, size)
+	if err != nil {
+		zap.L().Debug("failed to search filters", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
+			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+	return res, nil
+}
+
+func (c *Controller) ListCategoryFilters(ctx context.Context, slug string) ([]*model.Filter, error) {
+	const op = "category.ListCategoryFilters.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cacheKey := fmt.Sprintf(categoryFiltersListCacheKey, slug)
+	cached := make([]*model.Filter, 0, 15)
+	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
+		return cached, nil
+	}
+
+	res, err := c.repo.ListCategoryFilters(ctx, slug)
+	if err != nil {
+		zap.L().Debug("failed to list category filters", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
+			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+	return res, nil
 }

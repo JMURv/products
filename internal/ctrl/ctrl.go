@@ -2,8 +2,6 @@ package ctrl
 
 import (
 	"context"
-	"github.com/JMURv/par-pro/products/internal/ctrl/etc"
-	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	"time"
 )
 
@@ -32,15 +30,11 @@ type CacheService interface {
 type Controller struct {
 	repo  AppRepo
 	cache CacheService
-	seo   seo.SEOCtrl
-	etc   etc.EtcCtrl
 }
 
-func New(repo AppRepo, cache CacheService, seo seo.SEOCtrl, etc etc.EtcCtrl) *Controller {
+func New(repo AppRepo, cache CacheService) *Controller {
 	return &Controller{
 		repo:  repo,
 		cache: cache,
-		seo:   seo,
-		etc:   etc,
 	}
 }

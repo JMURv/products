@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/JMURv/par-pro/products/internal/ctrl/etc"
-	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -32,17 +30,6 @@ type promotionRepo interface {
 	ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error)
 }
 
-func (c *Controller) invalidatePromoRelatedCache() {
-	ctx := context.Background()
-	if err := c.cache.InvalidateKeysByPattern(ctx, invalidatePromoRelatedCachePattern); err != nil {
-		zap.L().Debug(
-			"failed to invalidate cache",
-			zap.String("key", invalidatePromoRelatedCachePattern),
-			zap.Error(err),
-		)
-	}
-}
-
 func (c *Controller) PromotionSearch(ctx context.Context, query string, page int, size int) (*model.PaginatedPromosData, error) {
 	const op = "promotion.search.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
@@ -67,31 +54,6 @@ func (c *Controller) PromotionSearch(ctx context.Context, query string, page int
 		}
 	}
 
-	return res, nil
-}
-
-func (c *Controller) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
-	const op = "promo.ListPromotionItems.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cached := &model.PaginatedPromoItemsData{}
-	cacheKey := fmt.Sprintf(PromotionItemsCacheKey, slug, page, size)
-	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
-		return cached, nil
-	}
-	res, err := c.repo.ListPromotionItems(ctx, slug, page, size)
-	if err != nil {
-		zap.L().Debug("failed to get promotion items", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
 	return res, nil
 }
 
@@ -165,17 +127,7 @@ func (c *Controller) CreatePromotion(ctx context.Context, p *model.Promotion) (s
 		return "", err
 	}
 
-	if err := c.etc.CreateBanner(ctx, etc.Promo.String(), slug, p.Banner); err != nil {
-		zap.L().Debug("failed to create banner", zap.Error(err), zap.String("op", op))
-		return "", err
-	}
-
-	if err := c.seo.CreateSEO(ctx, seo.Promo.String(), slug, p.SEO); err != nil {
-		zap.L().Debug("failed to create SEO", zap.Error(err), zap.String("op", op))
-		return "", err
-	}
-
-	go c.invalidatePromoRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidatePromoRelatedCachePattern)
 	return slug, nil
 }
 
@@ -194,19 +146,11 @@ func (c *Controller) UpdatePromotion(ctx context.Context, slug string, p *model.
 		return err
 	}
 
-	if err := c.etc.UpdateBanner(ctx, etc.Promo.String(), slug, p.Banner); err != nil {
-		zap.L().Debug("failed to update banner", zap.Error(err), zap.String("op", op))
-	}
-
-	if err := c.seo.UpdateSEO(ctx, seo.Promo.String(), slug, p.SEO); err != nil {
-		zap.L().Debug("failed to update SEO", zap.Error(err), zap.String("op", op))
-	}
-
 	if err = c.cache.Delete(ctx, fmt.Sprintf(promotionCacheKey, slug)); err != nil {
 		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
 	}
 
-	go c.invalidatePromoRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidatePromoRelatedCachePattern)
 	return nil
 }
 
@@ -225,18 +169,35 @@ func (c *Controller) DeletePromotion(ctx context.Context, slug string) error {
 		return err
 	}
 
-	if err := c.etc.DeleteBanner(ctx, etc.Promo.String(), slug); err != nil {
-		zap.L().Debug("failed to delete banner", zap.Error(err), zap.String("op", op))
-	}
-
-	if err := c.seo.DeleteSEO(ctx, seo.Promo.String(), slug); err != nil {
-		zap.L().Debug("failed to delete  SEO", zap.Error(err), zap.String("op", op))
-	}
-
 	if err = c.cache.Delete(ctx, fmt.Sprintf(promotionCacheKey, slug)); err != nil {
 		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
 	}
 
-	go c.invalidatePromoRelatedCache()
+	go c.cache.InvalidateKeysByPattern(ctx, invalidatePromoRelatedCachePattern)
 	return nil
+}
+
+func (c *Controller) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
+	const op = "promo.ListPromotionItems.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cached := &model.PaginatedPromoItemsData{}
+	cacheKey := fmt.Sprintf(PromotionItemsCacheKey, slug, page, size)
+	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
+		return cached, nil
+	}
+	res, err := c.repo.ListPromotionItems(ctx, slug, page, size)
+	if err != nil {
+		zap.L().Debug("failed to get promotion items", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
+			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+	return res, nil
 }

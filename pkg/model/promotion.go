@@ -1,8 +1,6 @@
 package model
 
 import (
-	"github.com/JMURv/par-pro/products/pkg/model/etc"
-	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"github.com/google/uuid"
 	"time"
 )
@@ -24,10 +22,8 @@ type Promotion struct {
 	LastsTo        time.Time        `json:"lasts_to"`
 	PromotionItems []*PromotionItem `json:"promotion_items"`
 
-	Banner    *etc.Banner `json:"banner"`
-	SEO       *seo.SEO    `json:"seo"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PaginatedPromoItemsData struct {

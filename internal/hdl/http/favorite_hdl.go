@@ -20,11 +20,11 @@ func RegisterFavoriteRoutes(mux *http.ServeMux, h *Handler) {
 		"/api/favorite", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				mid.MiddlewareFunc(h.listFavorites, h.authMiddleware)
+				mid.ApplyMiddleware(h.listFavorites, h.authMiddleware)
 			case http.MethodPost:
-				mid.MiddlewareFunc(h.addToFavorites, h.authMiddleware)
+				mid.ApplyMiddleware(h.addToFavorites, h.authMiddleware)
 			case http.MethodDelete:
-				mid.MiddlewareFunc(h.removeFromFavorites, h.authMiddleware)
+				mid.ApplyMiddleware(h.removeFromFavorites, h.authMiddleware)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}

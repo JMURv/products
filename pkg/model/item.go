@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"github.com/google/uuid"
 	"time"
 )
@@ -30,7 +29,6 @@ type Item struct {
 	Categories   []Category `json:"categories"`
 	ParentItemID uuid.UUID  `json:"parent_item_id"`
 
-	SEO             seo.SEO          `json:"seo"`
 	Media           []ItemMedia      `json:"media"`
 	Attributes      []ItemAttribute  `json:"attributes"`
 	Variants        []Item           `json:"variants"`

@@ -1,8 +1,6 @@
 package model
 
 import (
-	"github.com/JMURv/par-pro/products/pkg/model/etc"
-	"github.com/JMURv/par-pro/products/pkg/model/seo"
 	"time"
 )
 
@@ -26,10 +24,8 @@ type Category struct {
 	ParentCategory *Category  `json:"parent_category"`
 	Children       []Category `json:"children"`
 
-	Banner  etc.Banner `json:"banner"`
-	SEO     seo.SEO    `json:"seo"`
-	Items   []Item     `json:"items"`
-	Filters []Filter   `json:"filters"`
+	Items   []Item   `json:"items"`
+	Filters []Filter `json:"filters"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

@@ -22,32 +22,32 @@ import (
 func RegisterItemRoutes(mux *http.ServeMux, h *Handler) {
 	mux.HandleFunc(
 		"/api/item/search", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.itemSearch, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.itemSearch, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 	mux.HandleFunc(
 		"/api/item/attr/search", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.itemAttrSearch, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.itemAttrSearch, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 	mux.HandleFunc(
 		"/api/item/related/", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.listRelatedItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.listRelatedItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 	mux.HandleFunc(
 		"/api/category/items/", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.listCategoryItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.listCategoryItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 	mux.HandleFunc(
 		"/api/hits", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.HitItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.HitItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 	mux.HandleFunc(
 		"/api/recs", func(w http.ResponseWriter, r *http.Request) {
-			mid.MiddlewareFunc(h.RecItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
+			mid.ApplyMiddleware(h.RecItems, mid.MethodNotAllowed(http.MethodGet))(w, r)
 		},
 	)
 
@@ -57,7 +57,7 @@ func RegisterItemRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.ListItems(w, r)
 			case http.MethodPost:
-				mid.MiddlewareFunc(h.CreateItem, h.authMiddleware)(w, r)
+				mid.ApplyMiddleware(h.CreateItem, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
@@ -70,9 +70,9 @@ func RegisterItemRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.GetItem(w, r)
 			case http.MethodPut:
-				mid.MiddlewareFunc(h.UpdateItem, h.authMiddleware)(w, r)
+				mid.ApplyMiddleware(h.UpdateItem, h.authMiddleware)(w, r)
 			case http.MethodDelete:
-				mid.MiddlewareFunc(h.DeleteItem, h.authMiddleware)(w, r)
+				mid.ApplyMiddleware(h.DeleteItem, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}

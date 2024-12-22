@@ -1,11 +1,6 @@
 version: 3
 
-vars:
-  USERNAME: jmurv
-  IMAGE_NAME: par-pro-products
-
 tasks:
-
   app:
     desc: Run app
     cmds:
@@ -21,36 +16,18 @@ tasks:
     cmds:
       - "go test ./internal/hdl/http"
       - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -func=cov_http.out"
+      - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -html=cov_http.out"
 
-  t-hdl-html:
-    desc: Run coverage
+  t-ctrl:
+    desc: Run ctrl tests
     cmds:
-      - "go test -coverprofile=cov.out ./internal/hdl/http && go tool cover -html=cov.out"
+      - "go test ./internal/ctrl"
+      - "go test -coverprofile=cov_ctrl.out ./internal/ctrl && go tool cover -func=cov_ctrl.out"
+      - "go test -coverprofile=cov_ctrl.out ./internal/ctrl && go tool cover -html=cov_ctrl.out"
 
   mocks:
     desc: Generate mocks
     cmds:
       - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
       - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
-      - mockgen -source="./internal/ctrl/seo/seo.go" -destination="mocks/mock_seo.go" -package=mocks
       - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
-
-  build:
-    desc: Build app
-    cmds:
-      - "docker build --no-cache -t {{.USERNAME}}/{{.IMAGE_NAME}}:latest ."
-
-  push:
-    desc: Push image to docker registry
-    cmds:
-      - "docker push {{.USERNAME}}/{{.IMAGE_NAME}}:latest"
-
-  redis:
-    desc: Run redis
-    cmds:
-      - "docker run -d --rm --name=redis -p 6379:6379 redis:alpine"
-
-  kafka:
-    desc: Run kafka
-    cmds:
-      - "docker run -d --rm --name=kafka -p 9092:9092 apache/kafka:3.7.0"

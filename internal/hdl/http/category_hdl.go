@@ -19,17 +19,17 @@ import (
 
 func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 	mux.HandleFunc(
-		"/api/category/search", mid.MiddlewareFunc(
+		"/api/category/search", mid.ApplyMiddleware(
 			h.categorySearch, mid.MethodNotAllowed(http.MethodGet),
 		),
 	)
 	mux.HandleFunc(
-		"/api/category/filters/search", mid.MiddlewareFunc(
+		"/api/category/filters/search", mid.ApplyMiddleware(
 			h.categoryFiltersSearch, mid.MethodNotAllowed(http.MethodGet),
 		),
 	)
 	mux.HandleFunc(
-		"/api/category/filters/", mid.MiddlewareFunc(
+		"/api/category/filters/", mid.ApplyMiddleware(
 			h.listCategoryFilters, mid.MethodNotAllowed(http.MethodGet),
 		),
 	)
@@ -40,7 +40,7 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.listCategories(w, r)
 			case http.MethodPost:
-				mid.MiddlewareFunc(h.createCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.createCategory, h.authMiddleware)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
@@ -53,9 +53,9 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.getCategory(w, r)
 			case http.MethodPut:
-				mid.MiddlewareFunc(h.updateCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.updateCategory, h.authMiddleware)
 			case http.MethodDelete:
-				mid.MiddlewareFunc(h.deleteCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.deleteCategory, h.authMiddleware)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}

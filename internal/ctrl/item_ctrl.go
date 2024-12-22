@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/JMURv/par-pro/products/internal/ctrl/seo"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -41,15 +40,155 @@ type itemRepo interface {
 	RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
 }
 
-func (c *Controller) invalidateItemRelatedCache() {
-	ctx := context.Background()
-	if err := c.cache.InvalidateKeysByPattern(ctx, invalidateItemRelatedCachePattern); err != nil {
-		zap.L().Debug(
-			"failed to invalidate cache",
-			zap.String("key", invalidateItemRelatedCachePattern),
-			zap.Error(err),
-		)
+func (c *Controller) ItemSearch(ctx context.Context, query string, page, size int) (*model.PaginatedItemsData, error) {
+	const op = "items.Search.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cached := &model.PaginatedItemsData{}
+	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemSearchCacheKey, query, page, size), &cached); err == nil {
+		return cached, nil
 	}
+
+	res, err := c.repo.ItemSearch(ctx, query, page, size)
+	if err != nil {
+		zap.L().Debug("failed to search items", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(
+			ctx,
+			consts.DefaultCacheTime,
+			fmt.Sprintf(itemSearchCacheKey, query, page, size),
+			bytes,
+		); err != nil {
+			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+
+	return res, nil
+}
+
+func (c *Controller) ListItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
+	const op = "items.ListItems.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cached := &model.PaginatedItemsData{}
+	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemListCacheKey, page, size), cached); err == nil {
+		return cached, nil
+	}
+
+	res, err := c.repo.ListItems(ctx, page, size)
+	if err != nil {
+		zap.L().Debug("failed to list items", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(
+			ctx,
+			consts.DefaultCacheTime,
+			fmt.Sprintf(itemListCacheKey, page, size),
+			bytes,
+		); err != nil {
+			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+
+	return res, nil
+}
+
+func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error) {
+	const op = "items.GetItemByUUID.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	cached := &model.Item{}
+	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemCacheKey, uid), cached); err == nil {
+		return cached, nil
+	}
+
+	res, err := c.repo.GetItemByUUID(ctx, uid)
+	if err != nil && err == repo.ErrNotFound {
+		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
+		return nil, ErrNotFound
+	} else if err != nil {
+		zap.L().Debug("failed to get item", zap.Error(err), zap.String("op", op))
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(res); err == nil {
+		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, uid), bytes); err != nil {
+			zap.L().Debug("failed to set cache", zap.Error(err), zap.String("op", op))
+		}
+	}
+
+	return res, nil
+}
+
+func (c *Controller) CreateItem(ctx context.Context, i *model.Item) (uuid.UUID, error) {
+	const op = "items.CreateItem.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	uid, err := c.repo.CreateItem(ctx, i)
+	if err != nil {
+		zap.L().Debug("failed to create item", zap.Error(err), zap.String("op", op))
+		return uuid.Nil, err
+	}
+
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateItemRelatedCachePattern)
+	return uid, nil
+}
+
+func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Item) error {
+	const op = "items.UpdateItem.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	err := c.repo.UpdateItem(ctx, uid, i)
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		return ErrNotFound
+	} else if err != nil {
+		zap.L().Debug("failed to update item", zap.Error(err), zap.String("op", op))
+		return err
+	}
+
+	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {
+		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
+	}
+
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateItemRelatedCachePattern)
+	return nil
+}
+
+func (c *Controller) DeleteItem(ctx context.Context, uid uuid.UUID) error {
+	const op = "items.DeleteItem.ctrl"
+	span, _ := opentracing.StartSpanFromContext(ctx, op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
+
+	err := c.repo.DeleteItem(ctx, uid)
+	if err != nil && errors.Is(err, repo.ErrNotFound) {
+		return ErrNotFound
+	} else if err != nil {
+		zap.L().Debug("failed to delete item", zap.Error(err), zap.String("op", op))
+		return err
+	}
+
+	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {
+		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
+	}
+
+	go c.cache.InvalidateKeysByPattern(ctx, invalidateItemRelatedCachePattern)
+	return nil
 }
 
 func (c *Controller) ListCategoryItems(ctx context.Context, slug string, page, size int, filters map[string]any, sort string) (*model.PaginatedItemsData, error) {
@@ -104,37 +243,6 @@ func (c *Controller) ItemAttrSearch(ctx context.Context, query string, size, pag
 			ctx,
 			consts.DefaultCacheTime,
 			fmt.Sprintf(itemAttrSearchCacheKey, query, page, size),
-			bytes,
-		); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-
-	return res, nil
-}
-
-func (c *Controller) ItemSearch(ctx context.Context, query string, page, size int) (*model.PaginatedItemsData, error) {
-	const op = "items.Search.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cached := &model.PaginatedItemsData{}
-	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemSearchCacheKey, query, page, size), &cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.ItemSearch(ctx, query, page, size)
-	if err != nil {
-		zap.L().Debug("failed to search items", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(
-			ctx,
-			consts.DefaultCacheTime,
-			fmt.Sprintf(itemSearchCacheKey, query, page, size),
 			bytes,
 		); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
@@ -225,136 +333,4 @@ func (c *Controller) RecItems(ctx context.Context, page, size int) (*model.Pagin
 
 	return res, nil
 
-}
-
-func (c *Controller) ListItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	const op = "items.ListItems.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cached := &model.PaginatedItemsData{}
-	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemListCacheKey, page, size), cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.ListItems(ctx, page, size)
-	if err != nil {
-		zap.L().Debug("failed to list items", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(
-			ctx,
-			consts.DefaultCacheTime,
-			fmt.Sprintf(itemListCacheKey, page, size),
-			bytes,
-		); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-
-	return res, nil
-}
-
-func (c *Controller) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error) {
-	const op = "items.GetItemByUUID.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cached := &model.Item{}
-	if err := c.cache.GetToStruct(ctx, fmt.Sprintf(itemCacheKey, uid), cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.GetItemByUUID(ctx, uid)
-	if err != nil && err == repo.ErrNotFound {
-		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
-		return nil, ErrNotFound
-	} else if err != nil {
-		zap.L().Debug("failed to get item", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, fmt.Sprintf(itemCacheKey, uid), bytes); err != nil {
-			zap.L().Debug("failed to set cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-
-	return res, nil
-}
-
-func (c *Controller) CreateItem(ctx context.Context, i *model.Item) (uuid.UUID, error) {
-	const op = "items.CreateItem.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	uid, err := c.repo.CreateItem(ctx, i)
-	if err != nil {
-		zap.L().Debug("failed to create item", zap.Error(err), zap.String("op", op))
-		return uuid.Nil, err
-	}
-
-	if err := c.seo.CreateSEO(ctx, seo.Item.String(), uid.String(), &i.SEO); err != nil {
-		zap.L().Debug("failed to create item SEO", zap.Error(err), zap.String("op", op))
-	}
-
-	go c.invalidateItemRelatedCache()
-	return uid, nil
-}
-
-func (c *Controller) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Item) error {
-	const op = "items.UpdateItem.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	err := c.repo.UpdateItem(ctx, uid, i)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return ErrNotFound
-	} else if err != nil {
-		zap.L().Debug("failed to update item", zap.Error(err), zap.String("op", op))
-		return err
-	}
-
-	if err := c.seo.UpdateSEO(ctx, seo.Item.String(), uid.String(), &i.SEO); err != nil {
-		zap.L().Debug("failed to update item SEO", zap.Error(err), zap.String("op", op))
-	}
-
-	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {
-		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
-	}
-
-	go c.invalidateItemRelatedCache()
-	return nil
-}
-
-func (c *Controller) DeleteItem(ctx context.Context, uid uuid.UUID) error {
-	const op = "items.DeleteItem.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	err := c.repo.DeleteItem(ctx, uid)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
-		return ErrNotFound
-	} else if err != nil {
-		zap.L().Debug("failed to delete item", zap.Error(err), zap.String("op", op))
-		return err
-	}
-
-	if err := c.seo.DeleteSEO(ctx, seo.Item.String(), uid.String()); err != nil {
-		zap.L().Debug("failed to delete item SEO", zap.Error(err), zap.String("op", op))
-	}
-
-	if err = c.cache.Delete(ctx, fmt.Sprintf(itemCacheKey, uid)); err != nil {
-		zap.L().Debug("failed to delete from cache", zap.Error(err), zap.String("op", op))
-	}
-
-	go c.invalidateItemRelatedCache()
-	return nil
 }
