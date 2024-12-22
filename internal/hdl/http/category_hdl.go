@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
@@ -17,9 +18,21 @@ import (
 )
 
 func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
-	mux.HandleFunc("/api/category/search", h.categorySearch)
-	mux.HandleFunc("/api/category/filters/search", h.categoryFiltersSearch)
-	mux.HandleFunc("/api/category/filters/", h.listCategoryFilters)
+	mux.HandleFunc(
+		"/api/category/search", mid.MiddlewareFunc(
+			h.categorySearch, mid.MethodNotAllowed(http.MethodGet),
+		),
+	)
+	mux.HandleFunc(
+		"/api/category/filters/search", mid.MiddlewareFunc(
+			h.categoryFiltersSearch, mid.MethodNotAllowed(http.MethodGet),
+		),
+	)
+	mux.HandleFunc(
+		"/api/category/filters/", mid.MiddlewareFunc(
+			h.listCategoryFilters, mid.MethodNotAllowed(http.MethodGet),
+		),
+	)
 
 	mux.HandleFunc(
 		"/api/category", func(w http.ResponseWriter, r *http.Request) {
@@ -27,9 +40,9 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.listCategories(w, r)
 			case http.MethodPost:
-				middlewareFunc(h.createCategory, h.authMiddleware)
+				mid.MiddlewareFunc(h.createCategory, h.authMiddleware)
 			default:
-				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
 		},
 	)
@@ -40,11 +53,11 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.getCategory(w, r)
 			case http.MethodPut:
-				middlewareFunc(h.updateCategory, h.authMiddleware)
+				mid.MiddlewareFunc(h.updateCategory, h.authMiddleware)
 			case http.MethodDelete:
-				middlewareFunc(h.deleteCategory, h.authMiddleware)
+				mid.MiddlewareFunc(h.deleteCategory, h.authMiddleware)
 			default:
-				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
 		},
 	)
@@ -56,11 +69,6 @@ func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) 
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
-
-	if r.Method != http.MethodGet {
-		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
-		return
-	}
 
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
@@ -96,11 +104,6 @@ func (h *Handler) categorySearch(w http.ResponseWriter, r *http.Request) {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
 
-	if r.Method != http.MethodGet {
-		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
-		return
-	}
-
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
 		utils.SuccessResponse(w, c, []string{})
@@ -134,11 +137,6 @@ func (h *Handler) listCategoryFilters(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
-
-	if r.Method != http.MethodGet {
-		utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
-		return
-	}
 
 	res, err := h.ctrl.ListCategoryFilters(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/filters/"))
 	if err != nil {

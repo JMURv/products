@@ -20,7 +20,7 @@ tasks:
     desc: Test handlers
     cmds:
       - "go test ./internal/hdl/http"
-      - "go test -coverprofile=cov.out ./internal/hdl/http && go tool cover -func=cov.out"
+      - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -func=cov_http.out"
 
   t-hdl-html:
     desc: Run coverage

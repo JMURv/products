@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
@@ -17,17 +18,26 @@ import (
 )
 
 func RegisterPromotionRoutes(mux *http.ServeMux, h *Handler) {
-	mux.HandleFunc("/api/promotions/search", h.promotionSearch)
-	mux.HandleFunc("/api/promotions/items/", h.listPromotionItems)
+	mux.HandleFunc(
+		"/api/promotions/search", mid.MiddlewareFunc(
+			h.promotionSearch, mid.MethodNotAllowed(http.MethodGet),
+		),
+	)
+	mux.HandleFunc(
+		"/api/promotions/items/", mid.MiddlewareFunc(
+			h.listPromotionItems, mid.MethodNotAllowed(http.MethodGet),
+		),
+	)
+
 	mux.HandleFunc(
 		"/api/promotions", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
 				h.listPromotions(w, r)
 			case http.MethodPost:
-				middlewareFunc(h.createPromotion, h.authMiddleware)
+				mid.MiddlewareFunc(h.createPromotion, h.authMiddleware)
 			default:
-				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
 		},
 	)
@@ -38,11 +48,11 @@ func RegisterPromotionRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.getPromotion(w, r)
 			case http.MethodPut:
-				middlewareFunc(h.updatePromotion, h.authMiddleware)
+				mid.MiddlewareFunc(h.updatePromotion, h.authMiddleware)
 			case http.MethodDelete:
-				middlewareFunc(h.deletePromotion, h.authMiddleware)
+				mid.MiddlewareFunc(h.deletePromotion, h.authMiddleware)
 			default:
-				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
 		},
 	)
@@ -54,12 +64,6 @@ func (h *Handler) promotionSearch(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
-
-	if r.Method != http.MethodGet {
-		c = http.StatusMethodNotAllowed
-		utils.ErrResponse(w, c, ErrMethodNotAllowed)
-		return
-	}
 
 	query := r.URL.Query().Get("q")
 	if len(query) < 3 {
@@ -94,12 +98,6 @@ func (h *Handler) listPromotionItems(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
-
-	if r.Method != http.MethodGet {
-		c = http.StatusMethodNotAllowed
-		utils.ErrResponse(w, c, ErrMethodNotAllowed)
-		return
-	}
 
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil {

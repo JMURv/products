@@ -41,20 +41,18 @@ func (s *SEOCtrl) CreateSEO(ctx context.Context, name, pk string, seo *seo.SEO) 
 	}
 	defer cli.Close()
 
-	_, err = pb.NewSEOClient(cli).CreateSEO(ctx, &pb.CreateAndUpdateSEOReq{
-		Name: name,
-		Pk:   pk,
-		Seo: &pb.SEOMsg{
+	_, err = pb.NewSEOClient(cli).CreateSEO(
+		ctx, &pb.SEOMsg{
 			Title:         seo.Title,
 			Description:   seo.Description,
 			Keywords:      seo.Keywords,
 			OGTitle:       seo.OGTitle,
 			OGDescription: seo.OGDescription,
 			OGImage:       seo.OGImage,
-			ObjName:       seo.OBJName,
-			ObjPk:         seo.OBJPK,
+			ObjName:       name,
+			ObjPk:         pk,
 		},
-	})
+	)
 	if err != nil {
 		return err
 	}
@@ -80,20 +78,18 @@ func (s *SEOCtrl) UpdateSEO(ctx context.Context, name, pk string, seo *seo.SEO) 
 	}
 	defer cli.Close()
 
-	_, err = pb.NewSEOClient(cli).UpdateSEO(ctx, &pb.CreateAndUpdateSEOReq{
-		Name: name,
-		Pk:   pk,
-		Seo: &pb.SEOMsg{
+	_, err = pb.NewSEOClient(cli).UpdateSEO(
+		ctx, &pb.SEOMsg{
 			Title:         seo.Title,
 			Description:   seo.Description,
 			Keywords:      seo.Keywords,
 			OGTitle:       seo.OGTitle,
 			OGDescription: seo.OGDescription,
 			OGImage:       seo.OGImage,
-			ObjName:       seo.OBJName,
-			ObjPk:         seo.OBJPK,
+			ObjName:       name,
+			ObjPk:         pk,
 		},
-	})
+	)
 	if err != nil {
 		return err
 	}
@@ -118,10 +114,12 @@ func (s *SEOCtrl) DeleteSEO(ctx context.Context, name, pk string) error {
 	}
 	defer cli.Close()
 
-	_, err = pb.NewSEOClient(cli).DeleteSEO(ctx, &pb.GetSEOReq{
-		Name: name,
-		Pk:   pk,
-	})
+	_, err = pb.NewSEOClient(cli).DeleteSEO(
+		ctx, &pb.GetSEOReq{
+			Name: name,
+			Pk:   pk,
+		},
+	)
 	if err != nil {
 		return err
 	}

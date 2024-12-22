@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
@@ -19,13 +20,13 @@ func RegisterFavoriteRoutes(mux *http.ServeMux, h *Handler) {
 		"/api/favorite", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				middlewareFunc(h.listFavorites, h.authMiddleware)
+				mid.MiddlewareFunc(h.listFavorites, h.authMiddleware)
 			case http.MethodPost:
-				middlewareFunc(h.addToFavorites, h.authMiddleware)
+				mid.MiddlewareFunc(h.addToFavorites, h.authMiddleware)
 			case http.MethodDelete:
-				middlewareFunc(h.removeFromFavorites, h.authMiddleware)
+				mid.MiddlewareFunc(h.removeFromFavorites, h.authMiddleware)
 			default:
-				utils.ErrResponse(w, http.StatusMethodNotAllowed, ErrMethodNotAllowed)
+				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
 		},
 	)

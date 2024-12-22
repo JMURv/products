@@ -11,7 +11,7 @@ import (
 	"github.com/JMURv/par-pro/products/internal/discovery"
 
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
-	handler "github.com/JMURv/par-pro/products/internal/hdl/grpc"
+	handler "github.com/JMURv/par-pro/products/internal/hdl/http"
 	tracing "github.com/JMURv/par-pro/products/internal/metrics/jaeger"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
 	"go.uber.org/zap"

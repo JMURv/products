@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/JMURv/par-pro/products/internal/ctrl/sso"
 	"github.com/JMURv/par-pro/products/internal/hdl"
+	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
-	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"
@@ -29,8 +29,6 @@ func New(ctrl hdl.Ctrl, sso sso.SSOSvc) *Handler {
 
 func (h *Handler) Start(port int) {
 	mux := http.NewServeMux()
-	//r.Use(h.tracingMiddleware)
-
 	RegisterItemRoutes(mux, h)
 	RegisterCategoryRoutes(mux, h)
 	RegisterPromotionRoutes(mux, h)
@@ -41,8 +39,10 @@ func (h *Handler) Start(port int) {
 		},
 	)
 
+	handler := mid.RecoverPanic(mux)
+	handler = mid.TracingMiddleware(mux)
 	h.srv = &http.Server{
-		Handler:      mux,
+		Handler:      handler,
 		Addr:         fmt.Sprintf(":%v", port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -60,16 +60,6 @@ func (h *Handler) Close() error {
 		return err
 	}
 	return nil
-}
-
-func middlewareFunc(h http.HandlerFunc, middleware ...func(http.Handler) http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var handler http.Handler = h
-		for _, m := range middleware {
-			handler = m(handler)
-		}
-		handler.ServeHTTP(w, r)
-	}
 }
 
 func (h *Handler) authMiddleware(next http.Handler) http.Handler {
@@ -94,20 +84,6 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 			}
 			ctx := context.WithValue(r.Context(), "uid", token)
 			next.ServeHTTP(w, r.WithContext(ctx))
-		},
-	)
-}
-
-func (h *Handler) tracingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			span := opentracing.GlobalTracer().StartSpan(
-				fmt.Sprintf("%s %s", r.Method, r.URL),
-			)
-			defer span.Finish()
-
-			zap.L().Info("Request", zap.String("method", r.Method), zap.String("uri", r.RequestURI))
-			next.ServeHTTP(w, r)
 		},
 	)
 }
