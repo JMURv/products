@@ -3,7 +3,7 @@ package sso
 import (
 	"context"
 	errs "github.com/JMURv/par-pro/products/internal/ctrl"
-	"github.com/JMURv/par-pro/products/internal/discovery"
+	"github.com/JMURv/par-pro/products/internal/discovery/JMURv"
 	pb "github.com/JMURv/protos/par-pro"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -27,7 +27,7 @@ func New(discovery *discovery.Discovery) *SSO {
 }
 
 func (s *SSO) ValidateToken(ctx context.Context, token string) (bool, error) {
-	const op = "products.ValidateToken.ctrl"
+	const op = "sso.ValidateToken.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
@@ -58,7 +58,7 @@ func (s *SSO) ValidateToken(ctx context.Context, token string) (bool, error) {
 }
 
 func (s *SSO) GetIDByToken(ctx context.Context, token string) (string, error) {
-	const op = "products.ValidateToken.ctrl"
+	const op = "sso.GetIDByToken.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()

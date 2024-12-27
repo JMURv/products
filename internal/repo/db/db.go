@@ -27,11 +27,11 @@ func New(conf *conf.DBConfig) *Repository {
 		zap.L().Fatal("Failed to connect to the database", zap.Error(err))
 	}
 
-	if err := conn.Ping(); err != nil {
+	if err = conn.Ping(); err != nil {
 		zap.L().Fatal("Failed to ping the database", zap.Error(err))
 	}
 
-	if err := dbutils.ApplyMigrations(conn, conf); err != nil {
+	if err = dbutils.ApplyMigrations(conn, conf); err != nil {
 		zap.L().Fatal("Failed to apply migrations", zap.Error(err))
 	}
 

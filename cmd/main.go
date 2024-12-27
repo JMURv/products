@@ -6,7 +6,7 @@ import (
 	"github.com/JMURv/par-pro/products/internal/cache/redis"
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
 	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso"
-	"github.com/JMURv/par-pro/products/internal/discovery"
+	"github.com/JMURv/par-pro/products/internal/discovery/JMURv"
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
 	handler "github.com/JMURv/par-pro/products/internal/hdl/http"
 	tracing "github.com/JMURv/par-pro/products/internal/metrics/jaeger"
@@ -42,29 +42,26 @@ func main() {
 	conf := cfg.MustLoad(configPath)
 	mustRegisterLogger(conf.Server.Mode)
 
-	// Start metrics and tracing
 	go metrics.New(conf.Server.Port + 5).Start(ctx)
 	go tracing.Start(ctx, conf.ServiceName, conf.Jaeger)
 
-	dscvry := discovery.New(
+	dsc := discovery.New(
 		conf.SrvDiscovery.URL,
 		conf.ServiceName,
 		fmt.Sprintf("%v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
 	)
 
-	if err := dscvry.Register(); err != nil {
+	if err := dsc.Register(); err != nil {
 		zap.L().Fatal("Error registering service", zap.Error(err))
 	}
 
-	// Setting up main app
 	cache := redis.New(conf.Redis)
 	repo := db.New(conf.DB)
 
-	ssoCtrl := sso_ctrl_grpc.New(dscvry)
+	ssoCtrl := sso_ctrl_grpc.New(dsc)
 	svc := ctrl.New(repo, cache)
 	h := handler.New(svc, ssoCtrl)
 
-	// Graceful shutdown
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -74,7 +71,7 @@ func main() {
 
 		cancel()
 		cache.Close()
-		if err := dscvry.Deregister(); err != nil {
+		if err := dsc.Deregister(); err != nil {
 			zap.L().Debug("Error deregistering service", zap.Error(err))
 		}
 		if err := h.Close(); err != nil {
@@ -84,7 +81,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	// Start service
 	zap.L().Info(
 		fmt.Sprintf("Starting server on %v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
 	)

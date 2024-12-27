@@ -18,6 +18,11 @@ tasks:
       - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -func=cov_http.out"
       - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -html=cov_http.out"
 
+  t-mid:
+    desc: Test middlewares
+    cmds:
+      - "go test ./internal/hdl/http/middleware"
+
   t-ctrl:
     desc: Run ctrl tests
     cmds:
@@ -25,9 +30,17 @@ tasks:
       - "go test -coverprofile=cov_ctrl.out ./internal/ctrl && go tool cover -func=cov_ctrl.out"
       - "go test -coverprofile=cov_ctrl.out ./internal/ctrl && go tool cover -html=cov_ctrl.out"
 
+  t-repo:
+    desc: Run repo tests
+    cmds:
+      - "go test ./internal/repo/db"
+      - "go test -coverprofile=cov_repo.out ./internal/repo/db && go tool cover -func=cov_repo.out"
+      #- "go test -coverprofile=cov_repo.out ./internal/repo/db && go tool cover -html=cov_repo.out"
+
   mocks:
     desc: Generate mocks
     cmds:
       - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
       - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
       - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
+      - mockgen -source="./internal/discovery/discovery.go" -destination="mocks/mock_discovery.go" -package=mocks

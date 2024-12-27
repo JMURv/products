@@ -27,7 +27,7 @@ func (r *Repository) PromotionSearch(ctx context.Context, query string, page, si
 
 	res := make([]*model.Promotion, 0, size)
 	for rows.Next() {
-		var p model.Promotion
+		p := &model.Promotion{}
 		if err = rows.Scan(
 			&p.Slug,
 			&p.Title,
@@ -38,7 +38,7 @@ func (r *Repository) PromotionSearch(ctx context.Context, query string, page, si
 		); err != nil {
 			return nil, err
 		}
-		res = append(res, &p)
+		res = append(res, p)
 	}
 
 	if err = rows.Err(); err != nil {

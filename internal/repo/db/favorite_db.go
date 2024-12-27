@@ -24,9 +24,9 @@ func (r *Repository) GetFavorites(ctx context.Context, uid uuid.UUID) ([]*model.
 	}
 	defer rows.Close()
 
-	var res []*model.Favorite
+	res := make([]*model.Favorite, 0, 20)
 	for rows.Next() {
-		var f model.Favorite
+		f := &model.Favorite{}
 		if err = rows.Scan(
 			&f.UserID,
 			&f.ItemID,
@@ -38,7 +38,7 @@ func (r *Repository) GetFavorites(ctx context.Context, uid uuid.UUID) ([]*model.
 		); err != nil {
 			return nil, err
 		}
-		res = append(res, &f)
+		res = append(res, f)
 	}
 
 	if err = rows.Err(); err != nil {

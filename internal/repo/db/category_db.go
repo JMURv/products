@@ -237,7 +237,7 @@ func (r *Repository) CategoryFiltersSearch(ctx context.Context, query string, pa
 
 	res := make([]*model.Filter, 0, size)
 	for rows.Next() {
-		var f *model.Filter
+		f := &model.Filter{}
 		if err = rows.Scan(
 			&f.ID,
 			&f.Name,

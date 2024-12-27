@@ -53,7 +53,9 @@ func UpdateItemMedia(tx *sql.Tx, uid uuid.UUID, req []model.ItemMedia) error {
 		return err
 	}
 
+	reqMap := make(map[string]struct{}, len(req))
 	for _, v := range req {
+		reqMap[v.Src] = struct{}{}
 		if _, ok := existing[v.Src]; !ok {
 			if _, err = tx.Exec(itemMediaCreateQ, uid, v.Src, v.Alt); err != nil {
 				return err
@@ -61,10 +63,6 @@ func UpdateItemMedia(tx *sql.Tx, uid uuid.UUID, req []model.ItemMedia) error {
 		}
 	}
 
-	reqMap := make(map[string]struct{}, len(req))
-	for _, v := range req {
-		reqMap[v.Src] = struct{}{}
-	}
 	for src, media := range existing {
 		if _, ok := reqMap[src]; !ok {
 			if _, err = tx.Exec(itemMediaDeleteQ, media.ID); err != nil {
