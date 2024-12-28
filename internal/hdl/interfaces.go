@@ -14,7 +14,7 @@ type Ctrl interface {
 	ItemAttrSearch(ctx context.Context, query string, size int, page int) (*model.PaginatedItemAttrData, error)
 	ItemSearch(ctx context.Context, query string, page, size int) (*model.PaginatedItemsData, error)
 	ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*model.RelatedProduct, error)
-	HitItems(ctx context.Context, page int, size int) (*model.PaginatedItemsData, error)
+	ListItemsByLabel(ctx context.Context, label string, page int, size int) (*model.PaginatedItemsData, error)
 	RecItems(ctx context.Context, page int, size int) (*model.PaginatedItemsData, error)
 	ListItems(ctx context.Context, page int, size int) (*model.PaginatedItemsData, error)
 	GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Item, error)

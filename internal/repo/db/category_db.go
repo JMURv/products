@@ -30,11 +30,11 @@ func (r *Repository) CategorySearch(ctx context.Context, query string, page, siz
 
 	res := make([]*model.Category, 0, size)
 	for rows.Next() {
-		var c model.Category
+		c := &model.Category{}
 		if err = rows.Scan(&c.Slug, &c.Title, &c.Src, &c.Alt, &c.ParentSlug); err != nil {
 			return nil, err
 		}
-		res = append(res, &c)
+		res = append(res, c)
 	}
 
 	totalPages := int((count + int64(size) - 1) / int64(size))
@@ -136,7 +136,7 @@ func (r *Repository) GetCategoryBySlug(ctx context.Context, slug string) (*model
 			return nil, err
 		}
 
-		res.Children[i].ProductQuantity = int(count)
+		res.Children[i].ProductQuantity = count
 	}
 
 	return res, nil

@@ -584,156 +584,167 @@ func TestRepository_CreatePromotion(t *testing.T) {
 	}
 }
 
-//func TestRepository_UpdatePromotion(t *testing.T) {
-//	db, mock, err := sqlmock.New()
-//	require.NoError(t, err)
-//	defer db.Close()
-//
-//	repo := Repository{conn: db}
-//	slug := "promo-test"
-//
-//	promotion := &model.Promotion{
-//		Slug:        slug,
-//		Title:       "Updated Promotion Test",
-//		Description: "Updated description of promotion test",
-//		Src:         "updated-src-test",
-//		Alt:         "updated-alt-test",
-//		LastsTo:     time.Now(),
-//		PromotionItems: []*model.PromotionItem{
-//			{Discount: 15, ItemID: uuid.New()},
-//			{Discount: 25, ItemID: uuid.New()},
-//		},
-//	}
-//
-//	tests := []struct {
-//		name         string
-//		mockExpect   func()
-//		expectedResp func(*testing.T, error)
-//	}{
-//		{
-//			name: "Success",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
-//					WithArgs(
-//						promotion.Title,
-//						promotion.Description,
-//						promotion.Src,
-//						promotion.Alt,
-//						promotion.LastsTo,
-//						slug,
-//					).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				rows := sqlmock.NewRows([]string{"discount", "promotion_slug", "item_id"}).
-//					AddRow(10, slug, uuid.New().String()).
-//					AddRow(20, slug, uuid.New().String())
-//
-//				mock.ExpectQuery(regexp.QuoteMeta(promoItemListQ)).
-//					WithArgs(slug).
-//					WillReturnRows(rows)
-//
-//				for _, item := range promotion.PromotionItems {
-//					mock.ExpectExec(regexp.QuoteMeta(promoItemCreateQ)).
-//						WithArgs(item.Discount, slug, item.ItemID).
-//						WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//					mock.ExpectExec(regexp.QuoteMeta(promoItemUpdateQ)).
-//						WithArgs(item.Discount, slug, item.ItemID, slug).
-//						WillReturnResult(sqlmock.NewResult(1, 1))
-//				}
-//
-//				mock.ExpectCommit()
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				require.NoError(t, err)
-//			},
-//		},
-//		{
-//			name: "BeginError",
-//			mockExpect: func() {
-//				mock.ExpectBegin().WillReturnError(errors.New("begin error"))
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "begin error", err.Error())
-//			},
-//		},
-//		{
-//			name: "UpdateError",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
-//					WithArgs(
-//						promotion.Title,
-//						promotion.Description,
-//						promotion.Src,
-//						promotion.Alt,
-//						promotion.LastsTo,
-//						slug,
-//					).
-//					WillReturnError(errors.New("update error"))
-//
-//				mock.ExpectRollback()
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "update error", err.Error())
-//			},
-//		},
-//		{
-//			name: "CommitError",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
-//					WithArgs(
-//						promotion.Title,
-//						promotion.Description,
-//						promotion.Src,
-//						promotion.Alt,
-//						promotion.LastsTo,
-//						slug,
-//					).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				rows := sqlmock.NewRows([]string{"discount", "promotion_slug", "item_id"}).
-//					AddRow(10, slug, uuid.New().String()).
-//					AddRow(20, slug, uuid.New().String())
-//
-//				mock.ExpectQuery(regexp.QuoteMeta(promoItemListQ)).
-//					WithArgs(slug).
-//					WillReturnRows(rows)
-//
-//				for _, item := range promotion.PromotionItems {
-//					mock.ExpectExec(regexp.QuoteMeta(promoItemUpdateQ)).
-//						WithArgs(item.Discount, slug, item.ItemID, slug).
-//						WillReturnResult(sqlmock.NewResult(1, 1))
-//				}
-//
-//				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "commit error", err.Error())
-//			},
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(
-//			tt.name, func(t *testing.T) {
-//				tt.mockExpect()
-//				err := repo.UpdatePromotion(context.Background(), slug, promotion)
-//				tt.expectedResp(t, err)
-//				err = mock.ExpectationsWereMet()
-//				assert.NoError(t, err)
-//			},
-//		)
-//	}
-//}
+func TestRepository_UpdatePromotion(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	repo := Repository{conn: db}
+
+	promotion := &model.Promotion{
+		Slug:        "promo-test",
+		Title:       "Updated Promotion Test",
+		Description: "Updated description of promotion test",
+		Src:         "updated-src-test",
+		Alt:         "updated-alt-test",
+		LastsTo:     time.Now(),
+		PromotionItems: []*model.PromotionItem{
+			{Discount: 15, ItemID: uuid.New()},
+			{Discount: 25, ItemID: uuid.New()},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		mockExpect   func()
+		expectedResp func(*testing.T, error)
+	}{
+		{
+			name: "Success",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
+					WithArgs(
+						promotion.Title,
+						promotion.Description,
+						promotion.Src,
+						promotion.Alt,
+						promotion.LastsTo,
+						promotion.Slug,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				rows := sqlmock.NewRows([]string{"discount", "promotion_slug", "item_id"}).
+					AddRow(
+						promotion.PromotionItems[0].Discount,
+						promotion.Slug,
+						promotion.PromotionItems[0].ItemID.String(),
+					).
+					AddRow(
+						promotion.PromotionItems[1].Discount,
+						promotion.Slug,
+						promotion.PromotionItems[1].ItemID.String(),
+					)
+
+				mock.ExpectQuery(regexp.QuoteMeta(promoItemListQ)).
+					WithArgs(promotion.Slug).
+					WillReturnRows(rows)
+
+				for _, item := range promotion.PromotionItems {
+					mock.ExpectExec(regexp.QuoteMeta(promoItemUpdateQ)).
+						WithArgs(item.Discount, promotion.Slug, item.ItemID, promotion.Slug, item.ItemID).
+						WillReturnResult(sqlmock.NewResult(1, 1))
+				}
+
+				mock.ExpectCommit()
+			},
+			expectedResp: func(t *testing.T, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "BeginError",
+			mockExpect: func() {
+				mock.ExpectBegin().WillReturnError(errors.New("begin error"))
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "begin error", err.Error())
+			},
+		},
+		{
+			name: "UpdateError",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
+					WithArgs(
+						promotion.Title,
+						promotion.Description,
+						promotion.Src,
+						promotion.Alt,
+						promotion.LastsTo,
+						promotion.Slug,
+					).
+					WillReturnError(errors.New("update error"))
+
+				mock.ExpectRollback()
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "update error", err.Error())
+			},
+		},
+		{
+			name: "CommitError",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(promoUpdateQ)).
+					WithArgs(
+						promotion.Title,
+						promotion.Description,
+						promotion.Src,
+						promotion.Alt,
+						promotion.LastsTo,
+						promotion.Slug,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				rows := sqlmock.NewRows([]string{"discount", "promotion_slug", "item_id"}).
+					AddRow(
+						promotion.PromotionItems[0].Discount,
+						promotion.Slug,
+						promotion.PromotionItems[0].ItemID.String(),
+					).
+					AddRow(
+						promotion.PromotionItems[1].Discount,
+						promotion.Slug,
+						promotion.PromotionItems[1].ItemID.String(),
+					)
+
+				mock.ExpectQuery(regexp.QuoteMeta(promoItemListQ)).
+					WithArgs(promotion.Slug).
+					WillReturnRows(rows)
+
+				for _, item := range promotion.PromotionItems {
+					mock.ExpectExec(regexp.QuoteMeta(promoItemUpdateQ)).
+						WithArgs(item.Discount, promotion.Slug, item.ItemID, promotion.Slug, item.ItemID).
+						WillReturnResult(sqlmock.NewResult(1, 1))
+				}
+
+				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "commit error", err.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				tt.mockExpect()
+				err := repo.UpdatePromotion(context.Background(), promotion.Slug, promotion)
+				tt.expectedResp(t, err)
+				err = mock.ExpectationsWereMet()
+				assert.NoError(t, err)
+			},
+		)
+	}
+}
 
 func TestRepository_DeletePromotion(t *testing.T) {
 	db, mock, err := sqlmock.New()

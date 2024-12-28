@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/ctrl"
-	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/mocks"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -320,13 +319,13 @@ func TestHandler_GetItem(t *testing.T) {
 			mockExpect: func() {
 				mctrl.EXPECT().GetItemByUUID(gomock.Any(), uuid.MustParse(uuid.Nil.String())).Return(
 					nil,
-					repo.ErrNotFound,
+					ctrl.ErrNotFound,
 				).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -585,13 +584,13 @@ func TestHandler_UpdateItem(t *testing.T) {
 			status:  http.StatusNotFound,
 			mockExpect: func() {
 				mctrl.EXPECT().UpdateItem(gomock.Any(), validUUID, validItm).Return(
-					repo.ErrNotFound,
+					ctrl.ErrNotFound,
 				).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -705,12 +704,12 @@ func TestHandler_DeleteItem(t *testing.T) {
 			resType: &utils.ErrorResponse{},
 			status:  http.StatusNotFound,
 			mockExpect: func() {
-				mctrl.EXPECT().DeleteItem(gomock.Any(), validUUID).Return(repo.ErrNotFound).Times(1)
+				mctrl.EXPECT().DeleteItem(gomock.Any(), validUUID).Return(ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -811,12 +810,12 @@ func TestHandler_ListRelatedItems(t *testing.T) {
 			resType: &utils.ErrorResponse{},
 			status:  http.StatusNotFound,
 			mockExpect: func() {
-				mctrl.EXPECT().ListRelatedItems(gomock.Any(), validUUID).Return(nil, repo.ErrNotFound).Times(1)
+				mctrl.EXPECT().ListRelatedItems(gomock.Any(), validUUID).Return(nil, ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -882,8 +881,8 @@ func TestHandler_ListRelatedItems(t *testing.T) {
 	}
 }
 
-func TestHandler_HitItems(t *testing.T) {
-	const uri = "/api/items/hit"
+func TestHandler_ListItemsByLabel(t *testing.T) {
+	const uri = "/api/item/label/"
 	mock := gomock.NewController(t)
 	defer mock.Finish()
 
@@ -904,12 +903,17 @@ func TestHandler_HitItems(t *testing.T) {
 		{
 			name:    "InvalidPage",
 			method:  http.MethodGet,
-			url:     uri + "?page=invalid&size=10",
+			url:     uri + "?page=invalid&size=10&label=test-label",
 			body:    nil,
 			resType: &model.PaginatedItemsData{},
 			status:  http.StatusOK,
 			mockExpect: func() {
-				mctrl.EXPECT().HitItems(gomock.Any(), 1, 10).Return(&model.PaginatedItemsData{}, nil).Times(1)
+				mctrl.EXPECT().ListItemsByLabel(
+					gomock.Any(),
+					"test-label",
+					consts.DefaultPage,
+					10,
+				).Return(&model.PaginatedItemsData{}, nil).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				_, ok := res.(*model.PaginatedItemsData)
@@ -919,12 +923,17 @@ func TestHandler_HitItems(t *testing.T) {
 		{
 			name:    "InvalidSize",
 			method:  http.MethodGet,
-			url:     uri + "?page=1&size=invalid",
+			url:     uri + "?page=1&size=invalid&label=test-label",
 			body:    nil,
 			resType: &model.PaginatedItemsData{},
 			status:  http.StatusOK,
 			mockExpect: func() {
-				mctrl.EXPECT().HitItems(gomock.Any(), 1, consts.DefaultPageSize).Return(
+				mctrl.EXPECT().ListItemsByLabel(
+					gomock.Any(),
+					"test-label",
+					1,
+					consts.DefaultPageSize,
+				).Return(
 					&model.PaginatedItemsData{},
 					nil,
 				).Times(1)
@@ -935,14 +944,35 @@ func TestHandler_HitItems(t *testing.T) {
 			},
 		},
 		{
+			name:       "InvalidLabelLength",
+			method:     http.MethodGet,
+			url:        uri + "?page=1&size=invalid&label=t",
+			body:       nil,
+			resType:    &model.PaginatedItemsData{},
+			status:     http.StatusOK,
+			mockExpect: func() {},
+			expectedResp: func(t *testing.T, res any) {
+				_, ok := res.(*model.PaginatedItemsData)
+				require.True(t, ok)
+			},
+		},
+		{
 			name:    "InternalError",
 			method:  http.MethodGet,
-			url:     uri + "?page=1&size=10",
+			url:     uri + "?page=1&size=10&label=test-label",
 			body:    nil,
 			resType: &utils.ErrorResponse{},
 			status:  http.StatusInternalServerError,
 			mockExpect: func() {
-				mctrl.EXPECT().HitItems(gomock.Any(), 1, 10).Return(nil, errors.New("internal error")).Times(1)
+				mctrl.EXPECT().ListItemsByLabel(
+					gomock.Any(),
+					"test-label",
+					consts.DefaultPage,
+					10,
+				).Return(
+					nil,
+					errors.New("internal error"),
+				).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
@@ -953,12 +983,17 @@ func TestHandler_HitItems(t *testing.T) {
 		{
 			name:    "Success",
 			method:  http.MethodGet,
-			url:     uri + "?page=1&size=10",
+			url:     uri + "?page=1&size=10&label=test-label",
 			body:    nil,
 			resType: &model.PaginatedItemsData{},
 			status:  http.StatusOK,
 			mockExpect: func() {
-				mctrl.EXPECT().HitItems(gomock.Any(), 1, 10).Return(&model.PaginatedItemsData{}, nil).Times(1)
+				mctrl.EXPECT().ListItemsByLabel(
+					gomock.Any(),
+					"test-label",
+					consts.DefaultPage,
+					10,
+				).Return(&model.PaginatedItemsData{}, nil).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				_, ok := res.(*model.PaginatedItemsData)
@@ -977,115 +1012,7 @@ func TestHandler_HitItems(t *testing.T) {
 				req = req.WithContext(ctx)
 
 				w := httptest.NewRecorder()
-				h.HitItems(w, req)
-
-				res := tt.resType
-				err := json.NewDecoder(w.Result().Body).Decode(res)
-				assert.Nil(t, err)
-
-				assert.Equal(t, tt.status, w.Result().StatusCode)
-				tt.expectedResp(t, res)
-			},
-		)
-	}
-}
-
-func TestHandler_RecItems(t *testing.T) {
-	const uri = "/api/items/rec"
-	mock := gomock.NewController(t)
-	defer mock.Finish()
-
-	ctx := context.Background()
-	mctrl := mocks.NewMockCtrl(mock)
-	h := New(mctrl, nil)
-
-	tests := []struct {
-		name         string
-		method       string
-		url          string
-		body         any
-		resType      any
-		status       int
-		mockExpect   func()
-		expectedResp func(*testing.T, any)
-	}{
-		{
-			name:    "InvalidPage",
-			method:  http.MethodGet,
-			url:     uri + "?page=invalid&size=10",
-			body:    nil,
-			resType: &model.PaginatedItemsData{},
-			status:  http.StatusOK,
-			mockExpect: func() {
-				mctrl.EXPECT().RecItems(gomock.Any(), 1, 10).Return(&model.PaginatedItemsData{}, nil).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any) {
-				_, ok := res.(*model.PaginatedItemsData)
-				require.True(t, ok)
-			},
-		},
-		{
-			name:    "InvalidSize",
-			method:  http.MethodGet,
-			url:     uri + "?page=1&size=invalid",
-			body:    nil,
-			resType: &model.PaginatedItemsData{},
-			status:  http.StatusOK,
-			mockExpect: func() {
-				mctrl.EXPECT().RecItems(gomock.Any(), 1, consts.DefaultPageSize).Return(
-					&model.PaginatedItemsData{},
-					nil,
-				).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any) {
-				_, ok := res.(*model.PaginatedItemsData)
-				require.True(t, ok)
-			},
-		},
-		{
-			name:    "InternalError",
-			method:  http.MethodGet,
-			url:     uri + "?page=1&size=10",
-			body:    nil,
-			resType: &utils.ErrorResponse{},
-			status:  http.StatusInternalServerError,
-			mockExpect: func() {
-				mctrl.EXPECT().RecItems(gomock.Any(), 1, 10).Return(nil, errors.New("internal error")).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any) {
-				errResp, ok := res.(*utils.ErrorResponse)
-				require.True(t, ok)
-				assert.Equal(t, ctrl.ErrInternalError.Error(), errResp.Error)
-			},
-		},
-		{
-			name:    "Success",
-			method:  http.MethodGet,
-			url:     uri + "?page=1&size=10",
-			body:    nil,
-			resType: &model.PaginatedItemsData{},
-			status:  http.StatusOK,
-			mockExpect: func() {
-				mctrl.EXPECT().RecItems(gomock.Any(), 1, 10).Return(&model.PaginatedItemsData{}, nil).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any) {
-				_, ok := res.(*model.PaginatedItemsData)
-				require.True(t, ok)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				tt.mockExpect()
-
-				req := httptest.NewRequest(tt.method, tt.url, nil)
-				req.Header.Set("Content-Type", "application/json")
-				req = req.WithContext(ctx)
-
-				w := httptest.NewRecorder()
-				h.RecItems(w, req)
+				h.ListItemsByLabel(w, req)
 
 				res := tt.resType
 				err := json.NewDecoder(w.Result().Body).Decode(res)
@@ -1272,7 +1199,7 @@ func TestHandler_ItemAttrSearch(t *testing.T) {
 			resType: &model.PaginatedItemAttrData{},
 			status:  http.StatusOK,
 			mockExpect: func() {
-				mctrl.EXPECT().ItemAttrSearch(gomock.Any(), "testquery", 10, 1).Return(
+				mctrl.EXPECT().ItemAttrSearch(gomock.Any(), "testquery", consts.DefaultPageSize, 1).Return(
 					&model.PaginatedItemAttrData{},
 					nil,
 				).Times(1)

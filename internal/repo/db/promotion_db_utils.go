@@ -31,9 +31,9 @@ func UpdatePromotionItems(tx *sql.Tx, slug string, req []*model.PromotionItem) e
 	}
 	defer rows.Close()
 
-	existing := make(map[uuid.UUID]model.PromotionItem)
+	existing := make(map[uuid.UUID]*model.PromotionItem)
 	for rows.Next() {
-		var v model.PromotionItem
+		v := &model.PromotionItem{}
 		if err = rows.Scan(
 			&v.Discount,
 			&v.PromotionSlug,
@@ -53,9 +53,10 @@ func UpdatePromotionItems(tx *sql.Tx, slug string, req []*model.PromotionItem) e
 			if _, err = tx.Exec(
 				promoItemUpdateQ,
 				v.Discount,
-				v.PromotionSlug,
+				slug,
 				v.ItemID,
 				slug,
+				v.ItemID,
 			); err != nil {
 				return err
 			}

@@ -17,10 +17,9 @@ const itemCacheKey = "item:%v"
 const itemSearchCacheKey = "items-search:%v:%v:%v"
 const itemListCacheKey = "items-list:%v:%v"
 const relatedItemCacheKey = "items-related:%v"
-const recKey = "items-rec"
-const hitKey = "items-hit"
 const itemAttrSearchCacheKey = "items-attr-search:%v:%v:%v"
 const itemCategoryCacheKey = "items-category:%v:%v:%v:%v:%v"
+const itemLabelCacheKey = "items-label:%v:%v:%v"
 const invalidateItemRelatedCachePattern = "items-*"
 
 type itemRepo interface {
@@ -35,9 +34,7 @@ type itemRepo interface {
 	DeleteItem(ctx context.Context, uid uuid.UUID) error
 
 	ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*model.RelatedProduct, error)
-
-	HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
-	RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error)
+	ListItemsByLabel(ctx context.Context, label string, page int, size int) (*model.PaginatedItemsData, error)
 }
 
 func (c *Controller) ItemSearch(ctx context.Context, query string, page, size int) (*model.PaginatedItemsData, error) {
@@ -281,52 +278,26 @@ func (c *Controller) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*mo
 	return res, nil
 }
 
-func (c *Controller) HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	const op = "items.HitItems.ctrl"
+func (c *Controller) ListItemsByLabel(ctx context.Context, label string, page int, size int) (*model.PaginatedItemsData, error) {
+	const op = "items.ListItemsByLabel.ctrl"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	defer span.Finish()
 
+	cacheKey := fmt.Sprintf(itemLabelCacheKey, label, page, size)
 	cached := &model.PaginatedItemsData{}
-	if err := c.cache.GetToStruct(ctx, hitKey, &cached); err == nil {
+	if err := c.cache.GetToStruct(ctx, cacheKey, &cached); err == nil {
 		return cached, nil
 	}
 
-	res, err := c.repo.HitItems(ctx, page, size)
+	res, err := c.repo.ListItemsByLabel(ctx, label, page, size)
 	if err != nil {
-		zap.L().Debug("failed to get hit items", zap.Error(err), zap.String("op", op))
+		zap.L().Debug("failed to get items by label", zap.Error(err), zap.String("op", op))
 		return nil, err
 	}
 
 	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, hitKey, bytes); err != nil {
-			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
-		}
-	}
-
-	return res, nil
-
-}
-
-func (c *Controller) RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	const op = "items.RecItems.ctrl"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer span.Finish()
-
-	cached := &model.PaginatedItemsData{}
-	if err := c.cache.GetToStruct(ctx, recKey, &cached); err == nil {
-		return cached, nil
-	}
-
-	res, err := c.repo.RecItems(ctx, page, size)
-	if err != nil {
-		zap.L().Debug("failed to get recommended items", zap.Error(err), zap.String("op", op))
-		return nil, err
-	}
-
-	if bytes, err := json.Marshal(res); err == nil {
-		if err = c.cache.Set(ctx, consts.DefaultCacheTime, recKey, bytes); err != nil {
+		if err = c.cache.Set(ctx, consts.DefaultCacheTime, cacheKey, bytes); err != nil {
 			zap.L().Debug("failed to set to cache", zap.Error(err), zap.String("op", op))
 		}
 	}

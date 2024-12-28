@@ -461,7 +461,7 @@ func TestController_ListRelatedItems(t *testing.T) {
 	}
 }
 
-func TestController_HitItems(t *testing.T) {
+func TestController_ListItemsByLabel(t *testing.T) {
 	mock := gomock.NewController(t)
 	defer mock.Finish()
 
@@ -469,21 +469,22 @@ func TestController_HitItems(t *testing.T) {
 	cc := mocks.NewMockCacheService(mock)
 	ctrl := New(rr, cc)
 
+	label := "test-label"
+	page := 1
+	size := 10
+	cacheKey := fmt.Sprintf(itemLabelCacheKey, label, page, size)
+
 	tests := []struct {
 		name         string
-		page         int
-		size         int
 		mockExpect   func()
 		expectedResp func(*testing.T, any, error)
 	}{
 		{
 			name: "CacheHit",
-			page: 1,
-			size: 10,
 			mockExpect: func() {
 				cc.EXPECT().GetToStruct(
 					gomock.Any(),
-					hitKey,
+					cacheKey,
 					gomock.Any(),
 				).Return(nil).Times(1)
 			},
@@ -494,23 +495,22 @@ func TestController_HitItems(t *testing.T) {
 		},
 		{
 			name: "RepoSuccess",
-			page: 1,
-			size: 10,
 			mockExpect: func() {
 				cc.EXPECT().GetToStruct(
 					gomock.Any(),
-					hitKey,
+					cacheKey,
 					gomock.Any(),
 				).Return(errors.New("cache miss")).Times(1)
-				rr.EXPECT().HitItems(
+				rr.EXPECT().ListItemsByLabel(
 					gomock.Any(),
-					1,
-					10,
+					label,
+					page,
+					size,
 				).Return(&model.PaginatedItemsData{}, nil).Times(1)
 				cc.EXPECT().Set(
 					gomock.Any(),
 					consts.DefaultCacheTime,
-					hitKey,
+					cacheKey,
 					gomock.Any(),
 				).Return(nil).Times(1)
 			},
@@ -521,18 +521,17 @@ func TestController_HitItems(t *testing.T) {
 		},
 		{
 			name: "RepoInternalError",
-			page: 1,
-			size: 10,
 			mockExpect: func() {
 				cc.EXPECT().GetToStruct(
 					gomock.Any(),
-					hitKey,
+					cacheKey,
 					gomock.Any(),
 				).Return(errors.New("cache miss")).Times(1)
-				rr.EXPECT().HitItems(
+				rr.EXPECT().ListItemsByLabel(
 					gomock.Any(),
-					1,
-					10,
+					label,
+					page,
+					size,
 				).Return(nil, errors.New("internal error")).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any, err error) {
@@ -547,101 +546,7 @@ func TestController_HitItems(t *testing.T) {
 			tt.name, func(t *testing.T) {
 				tt.mockExpect()
 
-				res, err := ctrl.HitItems(context.Background(), tt.page, tt.size)
-
-				tt.expectedResp(t, res, err)
-			},
-		)
-	}
-}
-
-func TestController_RecItems(t *testing.T) {
-	mock := gomock.NewController(t)
-	defer mock.Finish()
-
-	rr := mocks.NewMockAppRepo(mock)
-	cc := mocks.NewMockCacheService(mock)
-	ctrl := New(rr, cc)
-
-	tests := []struct {
-		name         string
-		page         int
-		size         int
-		mockExpect   func()
-		expectedResp func(*testing.T, any, error)
-	}{
-		{
-			name: "CacheHit",
-			page: 1,
-			size: 10,
-			mockExpect: func() {
-				cc.EXPECT().GetToStruct(
-					gomock.Any(),
-					recKey,
-					gomock.Any(),
-				).Return(nil).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any, err error) {
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-			},
-		},
-		{
-			name: "RepoSuccess",
-			page: 1,
-			size: 10,
-			mockExpect: func() {
-				cc.EXPECT().GetToStruct(
-					gomock.Any(),
-					recKey,
-					gomock.Any(),
-				).Return(errors.New("cache miss")).Times(1)
-				rr.EXPECT().RecItems(
-					gomock.Any(),
-					1,
-					10,
-				).Return(&model.PaginatedItemsData{}, nil).Times(1)
-				cc.EXPECT().Set(
-					gomock.Any(),
-					consts.DefaultCacheTime,
-					recKey,
-					gomock.Any(),
-				).Return(nil).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any, err error) {
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-			},
-		},
-		{
-			name: "RepoInternalError",
-			page: 1,
-			size: 10,
-			mockExpect: func() {
-				cc.EXPECT().GetToStruct(
-					gomock.Any(),
-					recKey,
-					gomock.Any(),
-				).Return(errors.New("cache miss")).Times(1)
-				rr.EXPECT().RecItems(
-					gomock.Any(),
-					1,
-					10,
-				).Return(nil, errors.New("internal error")).Times(1)
-			},
-			expectedResp: func(t *testing.T, res any, err error) {
-				require.Error(t, err)
-				assert.Nil(t, res)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				tt.mockExpect()
-
-				res, err := ctrl.RecItems(context.Background(), tt.page, tt.size)
+				res, err := ctrl.ListItemsByLabel(context.Background(), label, page, size)
 
 				tt.expectedResp(t, res, err)
 			},

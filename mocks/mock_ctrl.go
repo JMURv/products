@@ -218,21 +218,6 @@ func (mr *MockCtrlMockRecorder) GetPromotion(ctx, slug any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPromotion", reflect.TypeOf((*MockCtrl)(nil).GetPromotion), ctx, slug)
 }
 
-// HitItems mocks base method.
-func (m *MockCtrl) HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HitItems", ctx, page, size)
-	ret0, _ := ret[0].(*model.PaginatedItemsData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// HitItems indicates an expected call of HitItems.
-func (mr *MockCtrlMockRecorder) HitItems(ctx, page, size any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HitItems", reflect.TypeOf((*MockCtrl)(nil).HitItems), ctx, page, size)
-}
-
 // ItemAttrSearch mocks base method.
 func (m *MockCtrl) ItemAttrSearch(ctx context.Context, query string, size, page int) (*model.PaginatedItemAttrData, error) {
 	m.ctrl.T.Helper()
@@ -336,6 +321,21 @@ func (m *MockCtrl) ListItems(ctx context.Context, page, size int) (*model.Pagina
 func (mr *MockCtrlMockRecorder) ListItems(ctx, page, size any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListItems", reflect.TypeOf((*MockCtrl)(nil).ListItems), ctx, page, size)
+}
+
+// ListItemsByLabel mocks base method.
+func (m *MockCtrl) ListItemsByLabel(ctx context.Context, label string, page, size int) (*model.PaginatedItemsData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListItemsByLabel", ctx, label, page, size)
+	ret0, _ := ret[0].(*model.PaginatedItemsData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListItemsByLabel indicates an expected call of ListItemsByLabel.
+func (mr *MockCtrlMockRecorder) ListItemsByLabel(ctx, label, page, size any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListItemsByLabel", reflect.TypeOf((*MockCtrl)(nil).ListItemsByLabel), ctx, label, page, size)
 }
 
 // ListPromotionItems mocks base method.

@@ -16,7 +16,7 @@ type Category struct {
 	ID              uint64 `json:"id"`
 	Slug            string `json:"slug"`
 	Title           string `json:"title"`
-	ProductQuantity int    `json:"product_quantity"`
+	ProductQuantity int64  `json:"product_quantity"`
 	Src             string `json:"src"`
 	Alt             string `json:"alt"`
 
@@ -24,7 +24,6 @@ type Category struct {
 	ParentCategory *Category  `json:"parent_category"`
 	Children       []Category `json:"children"`
 
-	Items   []Item   `json:"items"`
 	Filters []Filter `json:"filters"`
 
 	CreatedAt time.Time `json:"created_at"`

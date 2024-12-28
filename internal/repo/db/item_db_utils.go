@@ -2,31 +2,53 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/JMURv/par-pro/products/pkg/model"
 	"github.com/google/uuid"
 )
 
-func CreateItemMedia(tx *sql.Tx, uid uuid.UUID, media []model.ItemMedia) error {
-	for _, v := range media {
-		if _, err := tx.Exec(itemMediaCreateQ, uid, v.Src, v.Alt); err != nil {
+func createItemAttr(tx *sql.Tx, uid uuid.UUID, attr model.ItemAttribute) error {
+	if _, err := tx.Exec(itemAttrCreateQ, uid, attr.Name, attr.Value); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createItemAttrs(tx *sql.Tx, uid uuid.UUID, attrs []model.ItemAttribute) error {
+	for _, v := range attrs {
+		if err := createItemAttr(tx, uid, v); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func CreateItemAttrs(tx *sql.Tx, uid uuid.UUID, attrs []model.ItemAttribute) error {
-	for _, v := range attrs {
-		if _, err := tx.Exec(itemAttrCreateQ, uid, v.Name, v.Value); err != nil {
+func createItemMedia(tx *sql.Tx, uid uuid.UUID, media model.ItemMedia) error {
+	if _, err := tx.Exec(itemMediaCreateQ, uid, media.Src, media.Alt); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createItemMedias(tx *sql.Tx, uid uuid.UUID, media []model.ItemMedia) error {
+	for _, v := range media {
+		if err := createItemMedia(tx, uid, v); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func createItemCategory(tx *sql.Tx, uid uuid.UUID, c model.Category) error {
+	if _, err := tx.Exec(itemCategoryCreateQ, uid, c.Slug); err != nil {
+		return err
 	}
 	return nil
 }
 
 func CreateItemCategories(tx *sql.Tx, uid uuid.UUID, categories []model.Category) error {
 	for _, v := range categories {
-		if _, err := tx.Exec(itemCategoryCreateQ, uid, v.Slug); err != nil {
+		if err := createItemCategory(tx, uid, v); err != nil {
 			return err
 		}
 	}
@@ -40,9 +62,9 @@ func UpdateItemMedia(tx *sql.Tx, uid uuid.UUID, req []model.ItemMedia) error {
 	}
 	defer rows.Close()
 
-	existing := make(map[string]model.ItemMedia)
+	existing := make(map[string]*model.ItemMedia)
 	for rows.Next() {
-		var media model.ItemMedia
+		media := &model.ItemMedia{}
 		if err = rows.Scan(&media.ID, &media.Src, &media.Alt); err != nil {
 			return err
 		}
@@ -57,7 +79,7 @@ func UpdateItemMedia(tx *sql.Tx, uid uuid.UUID, req []model.ItemMedia) error {
 	for _, v := range req {
 		reqMap[v.Src] = struct{}{}
 		if _, ok := existing[v.Src]; !ok {
-			if _, err = tx.Exec(itemMediaCreateQ, uid, v.Src, v.Alt); err != nil {
+			if err = createItemMedia(tx, uid, v); err != nil {
 				return err
 			}
 		}
@@ -81,9 +103,9 @@ func UpdateItemAttributes(tx *sql.Tx, uid uuid.UUID, req []model.ItemAttribute) 
 	}
 	defer rows.Close()
 
-	existing := make(map[string]model.ItemAttribute)
+	existing := make(map[string]*model.ItemAttribute)
 	for rows.Next() {
-		var attr model.ItemAttribute
+		attr := &model.ItemAttribute{}
 		if err = rows.Scan(&attr.ID, &attr.Name, &attr.Value); err != nil {
 			return err
 		}
@@ -102,7 +124,7 @@ func UpdateItemAttributes(tx *sql.Tx, uid uuid.UUID, req []model.ItemAttribute) 
 				}
 			}
 		} else {
-			if _, err = tx.Exec(itemAttrCreateQ, uid, v.Name, v.Value); err != nil {
+			if err = createItemAttr(tx, uid, v); err != nil {
 				return err
 			}
 		}
@@ -158,7 +180,7 @@ func UpdateItemCategories(tx *sql.Tx, uid uuid.UUID, req []model.Category) error
 
 	for slug := range reqMap {
 		if _, exists := existing[slug]; !exists {
-			if _, err = tx.Exec(itemCategoryCreateQ, uid, slug); err != nil {
+			if err = createItemCategory(tx, uid, model.Category{Slug: slug}); err != nil {
 				return err
 			}
 		}
@@ -176,7 +198,7 @@ func UpdateItemRelatedProducts(tx *sql.Tx, uid uuid.UUID, req []model.RelatedPro
 
 	existing := make(map[uuid.UUID]struct{})
 	for rows.Next() {
-		var related model.RelatedProduct
+		related := &model.RelatedProduct{}
 		if err = rows.Scan(&related.ItemID, &related.RelatedItemID); err != nil {
 			return err
 		}
@@ -254,13 +276,16 @@ func UpdateItemVariants(tx *sql.Tx, uid uuid.UUID, req []model.Item) error {
 				return err
 			}
 
-			if err = UpdateItemMedia(tx, v.ID, v.Media); err != nil {
+			err = UpdateItemMedia(tx, v.ID, v.Media)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return err
 			}
 
-			if err = UpdateItemAttributes(tx, v.ID, v.Attributes); err != nil {
+			err = UpdateItemAttributes(tx, v.ID, v.Attributes)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return err
 			}
+
 		} else {
 			var newVarID uuid.UUID
 			if err = tx.QueryRow(
@@ -279,11 +304,11 @@ func UpdateItemVariants(tx *sql.Tx, uid uuid.UUID, req []model.Item) error {
 				return err
 			}
 
-			if err = CreateItemMedia(tx, newVarID, v.Media); err != nil {
+			if err = createItemMedias(tx, newVarID, v.Media); err != nil {
 				return err
 			}
 
-			if err = CreateItemAttrs(tx, newVarID, v.Attributes); err != nil {
+			if err = createItemAttrs(tx, newVarID, v.Attributes); err != nil {
 				return err
 			}
 

@@ -284,7 +284,7 @@ func TestRepository_GetCategoryBySlug(t *testing.T) {
 				assert.NotNil(t, res)
 				assert.Equal(t, "test-slug", res.Slug)
 				assert.Equal(t, "Test title", res.Title)
-				assert.Equal(t, 10, res.Children[0].ProductQuantity)
+				assert.Equal(t, int64(10), res.Children[0].ProductQuantity)
 			},
 		},
 		{

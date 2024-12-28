@@ -234,21 +234,6 @@ func (mr *MockAppRepoMockRecorder) GetPromotion(ctx, slug any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPromotion", reflect.TypeOf((*MockAppRepo)(nil).GetPromotion), ctx, slug)
 }
 
-// HitItems mocks base method.
-func (m *MockAppRepo) HitItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HitItems", ctx, page, size)
-	ret0, _ := ret[0].(*model.PaginatedItemsData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// HitItems indicates an expected call of HitItems.
-func (mr *MockAppRepoMockRecorder) HitItems(ctx, page, size any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HitItems", reflect.TypeOf((*MockAppRepo)(nil).HitItems), ctx, page, size)
-}
-
 // ItemAttrSearch mocks base method.
 func (m *MockAppRepo) ItemAttrSearch(ctx context.Context, query string, size, page int) (*model.PaginatedItemAttrData, error) {
 	m.ctrl.T.Helper()
@@ -339,6 +324,21 @@ func (mr *MockAppRepoMockRecorder) ListItems(ctx, page, size any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListItems", reflect.TypeOf((*MockAppRepo)(nil).ListItems), ctx, page, size)
 }
 
+// ListItemsByLabel mocks base method.
+func (m *MockAppRepo) ListItemsByLabel(ctx context.Context, label string, page, size int) (*model.PaginatedItemsData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListItemsByLabel", ctx, label, page, size)
+	ret0, _ := ret[0].(*model.PaginatedItemsData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListItemsByLabel indicates an expected call of ListItemsByLabel.
+func (mr *MockAppRepoMockRecorder) ListItemsByLabel(ctx, label, page, size any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListItemsByLabel", reflect.TypeOf((*MockAppRepo)(nil).ListItemsByLabel), ctx, label, page, size)
+}
+
 // ListPromotionItems mocks base method.
 func (m *MockAppRepo) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
 	m.ctrl.T.Helper()
@@ -397,21 +397,6 @@ func (m *MockAppRepo) PromotionSearch(ctx context.Context, query string, page, s
 func (mr *MockAppRepoMockRecorder) PromotionSearch(ctx, query, page, size any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PromotionSearch", reflect.TypeOf((*MockAppRepo)(nil).PromotionSearch), ctx, query, page, size)
-}
-
-// RecItems mocks base method.
-func (m *MockAppRepo) RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecItems", ctx, page, size)
-	ret0, _ := ret[0].(*model.PaginatedItemsData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RecItems indicates an expected call of RecItems.
-func (mr *MockAppRepoMockRecorder) RecItems(ctx, page, size any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecItems", reflect.TypeOf((*MockAppRepo)(nil).RecItems), ctx, page, size)
 }
 
 // RemoveFromFavorites mocks base method.

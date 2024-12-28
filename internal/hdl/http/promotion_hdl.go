@@ -2,9 +2,9 @@ package http
 
 import (
 	"errors"
+	"github.com/JMURv/par-pro/products/internal/ctrl"
 	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
-	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -161,7 +161,7 @@ func (h *Handler) getPromotion(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	res, err := h.ctrl.GetPromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"))
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -169,7 +169,7 @@ func (h *Handler) getPromotion(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to get promotion", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -232,7 +232,7 @@ func (h *Handler) updatePromotion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.ctrl.UpdatePromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"), p)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -240,7 +240,7 @@ func (h *Handler) updatePromotion(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to update promotion", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -255,7 +255,7 @@ func (h *Handler) deletePromotion(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	err := h.ctrl.DeletePromotion(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/promotions/"))
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find promotion", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -263,7 +263,7 @@ func (h *Handler) deletePromotion(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to delete promotion", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 

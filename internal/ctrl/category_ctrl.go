@@ -123,7 +123,10 @@ func (c *Controller) CreateCategory(ctx context.Context, category *model.Categor
 
 	category.Slug = slugify.Slugify(category.Title)
 	slug, err := c.repo.CreateCategory(ctx, category)
-	if err != nil {
+	if err != nil && errors.Is(err, repo.ErrAlreadyExists) {
+		zap.L().Debug("failed to create category", zap.Error(err), zap.String("op", op))
+		return "", ErrAlreadyExists
+	} else if err != nil {
 		zap.L().Debug("failed to create category", zap.Error(err), zap.String("op", op))
 		return "", err
 	}

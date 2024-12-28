@@ -63,7 +63,7 @@ const promoItemUpdateQ = `
 	SET discount = ?, 
 	    promotion_slug = ?, 
 	    item_id = ?
-	WHERE promotion_slug = ?;
+	WHERE promotion_slug = ? AND  item_id = ?;
 `
 
 const promoUpdateQ = `

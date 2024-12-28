@@ -787,236 +787,330 @@ func TestRepository_CreateItem(t *testing.T) {
 	}
 }
 
-//func TestRepository_UpdateItem(t *testing.T) {
-//	db, mock, err := sqlmock.New()
-//	require.NoError(t, err)
-//	defer db.Close()
-//
-//	repo := Repository{conn: db}
-//	uid := uuid.New()
-//
-//	item := &md.Item{
-//		Title:        "Updated Item",
-//		Article:      "Updated Article",
-//		Description:  "Updated Description",
-//		Price:        20.0,
-//		Src:          "updated-src",
-//		Alt:          "updated-alt",
-//		InStock:      true,
-//		IsHit:        false,
-//		IsRec:        false,
-//		ParentItemID: uuid.Nil,
-//		Media: []md.ItemMedia{
-//			{Src: "updated-src1", Alt: "updated-alt1"},
-//		},
-//		Attributes: []md.ItemAttribute{
-//			{Name: "updated-attr1", Value: "updated-value1"},
-//		},
-//		Categories: []md.Category{
-//			{Slug: "updated-slug1"},
-//		},
-//		RelatedProducts: []md.RelatedProduct{
-//			{RelatedItemID: uuid.New()},
-//		},
-//		Variants: []md.Item{
-//			{
-//				Title:       "Variant Item",
-//				Article:     "Variant Article",
-//				Description: "Variant Description",
-//				Price:       15.0,
-//				Src:         "variant-src",
-//				Alt:         "variant-alt",
-//				InStock:     false,
-//				IsHit:       true,
-//				IsRec:       true,
-//			},
-//		},
-//	}
-//
-//	tests := []struct {
-//		name         string
-//		mockExpect   func()
-//		expectedResp func(*testing.T, error)
-//	}{
-//		{
-//			name: "Success",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
-//					WithArgs(
-//						item.Title,
-//						item.Article,
-//						item.Description,
-//						item.Price,
-//						item.Src,
-//						item.Alt,
-//						item.InStock,
-//						item.IsHit,
-//						item.IsRec,
-//						item.ParentItemID,
-//						uid,
-//					).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				// Expect media update
-//				mock.ExpectQuery(regexp.QuoteMeta(itemMediaList)).
-//					WithArgs(uid).
-//					WillReturnRows(
-//						sqlmock.NewRows([]string{"id", "src", "alt"}).
-//							AddRow(uint64(1), "existing-src1", "existing-alt1"),
-//					)
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemMediaCreateQ)).
-//					WithArgs(uid, item.Media[0].Src, item.Media[0].Alt).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				// Expect attribute update
-//				mock.ExpectQuery(regexp.QuoteMeta(itemAttrList)).
-//					WithArgs(uid).
-//					WillReturnRows(
-//						sqlmock.NewRows([]string{"id", "name", "value"}).
-//							AddRow(uint64(1), "existing-attr1", "existing-value1"),
-//					)
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemAttrCreateQ)).
-//					WithArgs(uid, item.Attributes[0].Name, item.Attributes[0].Value).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				// Expect category update
-//				mock.ExpectQuery(regexp.QuoteMeta(itemCategoriesListQ)).
-//					WithArgs(uid).
-//					WillReturnRows(
-//						sqlmock.NewRows([]string{"item_id", "category_slug"}).
-//							AddRow(uid, "existing-slug1"),
-//					)
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemCategoryCreateQ)).
-//					WithArgs(uid, item.Categories[0].Slug).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				// Expect related product update
-//				mock.ExpectQuery(regexp.QuoteMeta(itemRelatedProductList)).
-//					WithArgs(uid).
-//					WillReturnRows(
-//						sqlmock.NewRows([]string{"item_id", "related_item_id"}).
-//							AddRow(uid, "existing-related-id-1"),
-//					)
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemRelatedProductCreateQ)).
-//					WithArgs(uid, item.RelatedProducts[0].RelatedItemID).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				// Expect variant update
-//				mock.ExpectQuery("SELECT id, title, article, description, price, src, alt, in_stock, is_hit, is_rec FROM item WHERE parent_id = $1").
-//					WithArgs(uid).
-//					WillReturnRows(
-//						sqlmock.NewRows([]string{"id"}).
-//							AddRow("existing-var-id"),
-//					)
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
-//					WithArgs(
-//						item.Variants[0].Title,
-//						item.Variants[0].Article,
-//						item.Variants[0].Description,
-//						item.Variants[0].Price,
-//						item.Variants[0].Src,
-//						item.Variants[0].Alt,
-//						item.Variants[0].InStock,
-//						item.Variants[0].IsHit,
-//						item.Variants[0].IsRec,
-//						uid,
-//						"existing-var-id",
-//					).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				mock.ExpectCommit()
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				require.NoError(t, err)
-//			},
-//		},
-//		{
-//			name: "BeginError",
-//			mockExpect: func() {
-//				mock.ExpectBegin().WillReturnError(errors.New("begin error"))
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "begin error", err.Error())
-//			},
-//		},
-//		{
-//			name: "UpdateError",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
-//					WithArgs(
-//						item.Title,
-//						item.Article,
-//						item.Description,
-//						item.Price,
-//						item.Src,
-//						item.Alt,
-//						item.InStock,
-//						item.IsHit,
-//						item.IsRec,
-//						item.ParentItemID,
-//						uid,
-//					).
-//					WillReturnError(errors.New("update error"))
-//
-//				mock.ExpectRollback()
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "update error", err.Error())
-//			},
-//		},
-//		{
-//			name: "CommitError",
-//			mockExpect: func() {
-//				mock.ExpectBegin()
-//
-//				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
-//					WithArgs(
-//						item.Title,
-//						item.Article,
-//						item.Description,
-//						item.Price,
-//						item.Src,
-//						item.Alt,
-//						item.InStock,
-//						item.IsHit,
-//						item.IsRec,
-//						item.ParentItemID,
-//						uid,
-//					).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//
-//				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
-//			},
-//			expectedResp: func(t *testing.T, err error) {
-//				assert.Error(t, err)
-//				assert.Equal(t, "commit error", err.Error())
-//			},
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(
-//			tt.name, func(t *testing.T) {
-//				tt.mockExpect()
-//				err := repo.UpdateItem(context.Background(), uid, item)
-//				tt.expectedResp(t, err)
-//				err = mock.ExpectationsWereMet()
-//				assert.NoError(t, err)
-//			},
-//		)
-//	}
-//}
+func TestRepository_UpdateItem(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	repo := Repository{conn: db}
+	uid := uuid.New()
+
+	relatedID := uuid.New()
+	item := &md.Item{
+		Title:        "Updated Item",
+		Article:      "Updated Article",
+		Description:  "Updated Description",
+		Price:        20.0,
+		Src:          "updated-src",
+		Alt:          "updated-alt",
+		InStock:      true,
+		IsHit:        false,
+		IsRec:        false,
+		ParentItemID: uuid.Nil,
+		Media: []md.ItemMedia{
+			{Src: "updated-src1", Alt: "updated-alt1"},
+		},
+		Attributes: []md.ItemAttribute{
+			{Name: "updated-attr1", Value: "updated-value1"},
+		},
+		Categories: []md.Category{
+			{Slug: "updated-slug1"},
+		},
+		RelatedProducts: []md.RelatedProduct{
+			{RelatedItemID: relatedID},
+		},
+		Variants: []md.Item{
+			{
+				Title:       "Variant Item",
+				Article:     "Variant Article",
+				Description: "Variant Description",
+				Price:       15.0,
+				Src:         "variant-src",
+				Alt:         "variant-alt",
+				InStock:     false,
+				IsHit:       true,
+				IsRec:       true,
+			},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		mockExpect   func()
+		expectedResp func(*testing.T, error)
+	}{
+		{
+			name: "Success",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
+					WithArgs(
+						item.Title,
+						item.Article,
+						item.Description,
+						item.Price,
+						item.Src,
+						item.Alt,
+						item.InStock,
+						item.IsHit,
+						item.IsRec,
+						item.ParentItemID,
+						uid,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				mock.ExpectQuery(regexp.QuoteMeta(itemMediaList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"id", "src", "alt"}).
+							AddRow(uint64(1), "updated-src1", "updated-alt1"),
+					)
+
+				// Expect attribute update
+				mock.ExpectQuery(regexp.QuoteMeta(itemAttrList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"id", "name", "value"}).
+							AddRow(uint64(1), "updated-attr1", "updated-value1"),
+					)
+				// No update cause no difference in attr
+
+				// Expect category update
+				mock.ExpectQuery(regexp.QuoteMeta(itemCategoriesListQ)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"item_id", "category_slug"}).
+							AddRow(uid.String(), "updated-slug1"),
+					)
+
+				// Expect related product update
+				mock.ExpectQuery(regexp.QuoteMeta(itemRelatedProductList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"item_id", "related_item_id"}).
+							AddRow(uid.String(), relatedID.String()),
+					)
+
+				// Expect variant update
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT id, title, article, description, price, src, alt, in_stock, is_hit, is_rec FROM item WHERE parent_id = $1")).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows(
+							[]string{
+								"id",
+								"title",
+								"article",
+								"description",
+								"price",
+								"src",
+								"alt",
+								"in_stock",
+								"is_hit",
+								"is_rec",
+							},
+						).
+							AddRow(
+								item.Variants[0].ID.String(),
+								item.Variants[0].Title,
+								item.Variants[0].Article,
+								item.Variants[0].Description,
+								item.Variants[0].Price,
+								item.Variants[0].Src,
+								item.Variants[0].Alt,
+								item.Variants[0].InStock,
+								item.Variants[0].IsHit,
+								item.Variants[0].IsRec,
+							),
+					)
+
+				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
+					WithArgs(
+						item.Variants[0].Title,
+						item.Variants[0].Article,
+						item.Variants[0].Description,
+						item.Variants[0].Price,
+						item.Variants[0].Src,
+						item.Variants[0].Alt,
+						item.Variants[0].InStock,
+						item.Variants[0].IsHit,
+						item.Variants[0].IsRec,
+						uid,
+						item.Variants[0].ID,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				mock.ExpectQuery(regexp.QuoteMeta(itemMediaList)).WithArgs(item.Variants[0].ID).WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(regexp.QuoteMeta(itemAttrList)).WithArgs(item.Variants[0].ID).WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectCommit()
+			},
+			expectedResp: func(t *testing.T, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "BeginError",
+			mockExpect: func() {
+				mock.ExpectBegin().WillReturnError(errors.New("begin error"))
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "begin error", err.Error())
+			},
+		},
+		{
+			name: "UpdateError",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
+					WithArgs(
+						item.Title,
+						item.Article,
+						item.Description,
+						item.Price,
+						item.Src,
+						item.Alt,
+						item.InStock,
+						item.IsHit,
+						item.IsRec,
+						item.ParentItemID,
+						uid,
+					).
+					WillReturnError(errors.New("update error"))
+
+				mock.ExpectRollback()
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "update error", err.Error())
+			},
+		},
+		{
+			name: "CommitError",
+			mockExpect: func() {
+				mock.ExpectBegin()
+
+				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
+					WithArgs(
+						item.Title,
+						item.Article,
+						item.Description,
+						item.Price,
+						item.Src,
+						item.Alt,
+						item.InStock,
+						item.IsHit,
+						item.IsRec,
+						item.ParentItemID,
+						uid,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				mock.ExpectQuery(regexp.QuoteMeta(itemMediaList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"id", "src", "alt"}).
+							AddRow(uint64(1), "updated-src1", "updated-alt1"),
+					)
+
+				// Expect attribute update
+				mock.ExpectQuery(regexp.QuoteMeta(itemAttrList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"id", "name", "value"}).
+							AddRow(uint64(1), "updated-attr1", "updated-value1"),
+					)
+
+				// Expect category update
+				mock.ExpectQuery(regexp.QuoteMeta(itemCategoriesListQ)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"item_id", "category_slug"}).
+							AddRow(uid.String(), "updated-slug1"),
+					)
+
+				// Expect related product update
+				mock.ExpectQuery(regexp.QuoteMeta(itemRelatedProductList)).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"item_id", "related_item_id"}).
+							AddRow(uid.String(), relatedID.String()),
+					)
+
+				// Expect variant update
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT id, title, article, description, price, src, alt, in_stock, is_hit, is_rec FROM item WHERE parent_id = $1")).
+					WithArgs(uid).
+					WillReturnRows(
+						sqlmock.NewRows(
+							[]string{
+								"id",
+								"title",
+								"article",
+								"description",
+								"price",
+								"src",
+								"alt",
+								"in_stock",
+								"is_hit",
+								"is_rec",
+							},
+						).
+							AddRow(
+								item.Variants[0].ID.String(),
+								item.Variants[0].Title,
+								item.Variants[0].Article,
+								item.Variants[0].Description,
+								item.Variants[0].Price,
+								item.Variants[0].Src,
+								item.Variants[0].Alt,
+								item.Variants[0].InStock,
+								item.Variants[0].IsHit,
+								item.Variants[0].IsRec,
+							),
+					)
+
+				mock.ExpectExec(regexp.QuoteMeta(itemUpdateQ)).
+					WithArgs(
+						item.Variants[0].Title,
+						item.Variants[0].Article,
+						item.Variants[0].Description,
+						item.Variants[0].Price,
+						item.Variants[0].Src,
+						item.Variants[0].Alt,
+						item.Variants[0].InStock,
+						item.Variants[0].IsHit,
+						item.Variants[0].IsRec,
+						uid,
+						item.Variants[0].ID,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				mock.ExpectQuery(regexp.QuoteMeta(itemMediaList)).WithArgs(item.Variants[0].ID).WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(regexp.QuoteMeta(itemAttrList)).WithArgs(item.Variants[0].ID).WillReturnError(sql.ErrNoRows)
+
+				mock.ExpectCommit().WillReturnError(errors.New("commit error"))
+			},
+			expectedResp: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "commit error", err.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				tt.mockExpect()
+				err := repo.UpdateItem(context.Background(), uid, item)
+				tt.expectedResp(t, err)
+				err = mock.ExpectationsWereMet()
+				assert.NoError(t, err)
+			},
+		)
+	}
+}
 
 func TestRepository_DeleteItem(t *testing.T) {
 	db, mock, err := sqlmock.New()
@@ -1325,12 +1419,13 @@ func TestRepository_ListRelatedItems(t *testing.T) {
 	}
 }
 
-func TestRepository_HitItems(t *testing.T) {
+func TestRepository_ListItemsByLabel(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
 	repo := Repository{conn: db}
+	label := "hit"
 	page := 1
 	size := 10
 	expectedCount := int64(2)
@@ -1344,7 +1439,7 @@ func TestRepository_HitItems(t *testing.T) {
 		{
 			name: "Success",
 			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountHitQ)).
+				mock.ExpectQuery(regexp.QuoteMeta(itemCountLabelQ)).WithArgs(label).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
 
 				rows := sqlmock.NewRows(
@@ -1355,8 +1450,8 @@ func TestRepository_HitItems(t *testing.T) {
 					AddRow(uuid.New().String(), "Hit Item 1", 10.5, "src1", "alt1", true, false).
 					AddRow(uuid.New().String(), "Hit Item 2", 15.5, "src2", "alt2", true, true)
 
-				mock.ExpectQuery(regexp.QuoteMeta(itemListHitQ)).
-					WithArgs((page-1)*size, size).
+				mock.ExpectQuery(regexp.QuoteMeta(itemListLabelQ)).
+					WithArgs(label, (page-1)*size, size).
 					WillReturnRows(rows)
 			},
 			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
@@ -1372,7 +1467,7 @@ func TestRepository_HitItems(t *testing.T) {
 		{
 			name: "CountError",
 			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountHitQ)).
+				mock.ExpectQuery(regexp.QuoteMeta(itemCountLabelQ)).WithArgs(label).
 					WillReturnError(errors.New("count error"))
 			},
 			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
@@ -1384,11 +1479,11 @@ func TestRepository_HitItems(t *testing.T) {
 		{
 			name: "QueryError",
 			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountHitQ)).
+				mock.ExpectQuery(regexp.QuoteMeta(itemCountLabelQ)).WithArgs(label).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
 
-				mock.ExpectQuery(regexp.QuoteMeta(itemListHitQ)).
-					WithArgs((page-1)*size, size).
+				mock.ExpectQuery(regexp.QuoteMeta(itemListLabelQ)).
+					WithArgs(label, (page-1)*size, size).
 					WillReturnError(errors.New("query error"))
 			},
 			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
@@ -1400,7 +1495,7 @@ func TestRepository_HitItems(t *testing.T) {
 		{
 			name: "ScanError",
 			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountHitQ)).
+				mock.ExpectQuery(regexp.QuoteMeta(itemCountLabelQ)).WithArgs(label).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
 
 				rows := sqlmock.NewRows(
@@ -1410,8 +1505,8 @@ func TestRepository_HitItems(t *testing.T) {
 				).
 					AddRow(uuid.Nil, "Hit Item 1", 10.5, "src1", "alt1", true, false)
 
-				mock.ExpectQuery(regexp.QuoteMeta(itemListHitQ)).
-					WithArgs((page-1)*size, size).
+				mock.ExpectQuery(regexp.QuoteMeta(itemListLabelQ)).
+					WithArgs(label, (page-1)*size, size).
 					WillReturnRows(rows)
 			},
 			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
@@ -1426,119 +1521,7 @@ func TestRepository_HitItems(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				tt.mockExpect()
-				res, err := repo.HitItems(context.Background(), page, size)
-				tt.expectedResp(t, res, err)
-				err = mock.ExpectationsWereMet()
-				assert.NoError(t, err)
-			},
-		)
-	}
-}
-
-func TestRepository_RecItems(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	repo := Repository{conn: db}
-	page := 1
-	size := 10
-	expectedCount := int64(2)
-	expectedTotalPages := int((expectedCount + int64(size) - 1) / int64(size))
-
-	tests := []struct {
-		name         string
-		mockExpect   func()
-		expectedResp func(*testing.T, *md.PaginatedItemsData, error)
-	}{
-		{
-			name: "Success",
-			mockExpect: func() {
-				// Setup count query expectation
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountRecQ)).
-					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
-
-				// Setup item list query expectation
-				rows := sqlmock.NewRows(
-					[]string{
-						"id", "title", "price", "src", "alt", "is_hit", "is_rec",
-					},
-				).
-					AddRow(uuid.New().String(), "Rec Item 1", 10.5, "src1", "alt1", true, false).
-					AddRow(uuid.New().String(), "Rec Item 2", 15.5, "src2", "alt2", true, true)
-
-				mock.ExpectQuery(regexp.QuoteMeta(itemListRecQ)).
-					WithArgs((page-1)*size, size).
-					WillReturnRows(rows)
-			},
-			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
-				require.NoError(t, err)
-				require.NotNil(t, res)
-				assert.Equal(t, expectedCount, res.Count)
-				assert.Len(t, res.Data, 2)
-				assert.Equal(t, expectedTotalPages, res.TotalPages)
-				assert.Equal(t, "Rec Item 1", res.Data[0].Title)
-				assert.Equal(t, "Rec Item 2", res.Data[1].Title)
-			},
-		},
-		{
-			name: "CountError",
-			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountRecQ)).
-					WillReturnError(errors.New("count error"))
-			},
-			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
-				assert.Error(t, err)
-				assert.Equal(t, "count error", err.Error())
-				assert.Nil(t, res)
-			},
-		},
-		{
-			name: "QueryError",
-			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountRecQ)).
-					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
-
-				mock.ExpectQuery(regexp.QuoteMeta(itemListRecQ)).
-					WithArgs((page-1)*size, size).
-					WillReturnError(errors.New("query error"))
-			},
-			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
-				assert.Error(t, err)
-				assert.Equal(t, "query error", err.Error())
-				assert.Nil(t, res)
-			},
-		},
-		{
-			name: "ScanError",
-			mockExpect: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(itemCountRecQ)).
-					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(expectedCount))
-
-				rows := sqlmock.NewRows(
-					[]string{
-						"id", "title", "price", "src", "alt", "is_hit", "is_rec",
-					},
-				).
-					AddRow(uuid.Nil, "Rec Item 1", 10.5, "src1", "alt1", true, false)
-
-				mock.ExpectQuery(regexp.QuoteMeta(itemListRecQ)).
-					WithArgs((page-1)*size, size).
-					WillReturnRows(rows)
-			},
-			expectedResp: func(t *testing.T, res *md.PaginatedItemsData, err error) {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "Scan")
-				assert.Nil(t, res)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				tt.mockExpect()
-				res, err := repo.RecItems(context.Background(), page, size)
+				res, err := repo.ListItemsByLabel(context.Background(), label, page, size)
 				tt.expectedResp(t, res, err)
 				err = mock.ExpectationsWereMet()
 				assert.NoError(t, err)

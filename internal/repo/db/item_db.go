@@ -280,7 +280,7 @@ func (r *Repository) ListItems(ctx context.Context, page, size int) (*md.Paginat
 	for rows.Next() {
 		item := &md.Item{}
 		categories := make([]string, 0, 10)
-		if err := rows.Scan(
+		if err = rows.Scan(
 			&item.ID,
 			&item.Title,
 			&item.Article,
@@ -405,12 +405,12 @@ func (r *Repository) CreateItem(ctx context.Context, i *md.Item) (uuid.UUID, err
 		return uuid.Nil, err
 	}
 
-	if err = CreateItemMedia(tx, id, i.Media); err != nil {
+	if err = createItemMedias(tx, id, i.Media); err != nil {
 		tx.Rollback()
 		return uuid.Nil, err
 	}
 
-	if err = CreateItemAttrs(tx, id, i.Attributes); err != nil {
+	if err = createItemAttrs(tx, id, i.Attributes); err != nil {
 		tx.Rollback()
 		return uuid.Nil, err
 	}
@@ -627,17 +627,17 @@ func (r *Repository) ListRelatedItems(ctx context.Context, uid uuid.UUID) ([]*md
 	return res, nil
 }
 
-func (r *Repository) HitItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
-	const op = "items.HitItems.repo"
+func (r *Repository) ListItemsByLabel(ctx context.Context, label string, page int, size int) (*md.PaginatedItemsData, error) {
+	const op = "items.ListItemsByLabel.repo"
 	span, _ := opentracing.StartSpanFromContext(ctx, op)
 	defer span.Finish()
 
 	var count int64
-	if err := r.conn.QueryRow(itemCountHitQ).Scan(&count); err != nil {
+	if err := r.conn.QueryRow(itemCountLabelQ, label).Scan(&count); err != nil {
 		return nil, err
 	}
 
-	rows, err := r.conn.Query(itemListHitQ, (page-1)*size, size)
+	rows, err := r.conn.Query(itemListLabelQ, label, (page-1)*size, size)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,7 @@ func (r *Repository) HitItems(ctx context.Context, page, size int) (*md.Paginate
 
 	res := make([]*md.Item, 0, size)
 	for rows.Next() {
-		var i md.Item
+		i := &md.Item{}
 		if err = rows.Scan(
 			&i.ID,
 			&i.Title,
@@ -657,54 +657,7 @@ func (r *Repository) HitItems(ctx context.Context, page, size int) (*md.Paginate
 		); err != nil {
 			return nil, err
 		}
-		res = append(res, &i)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	totalPages := int((count + int64(size) - 1) / int64(size))
-	return &md.PaginatedItemsData{
-		Data:        res,
-		Count:       count,
-		TotalPages:  totalPages,
-		CurrentPage: page,
-		HasNextPage: page < totalPages,
-	}, nil
-}
-
-func (r *Repository) RecItems(ctx context.Context, page, size int) (*md.PaginatedItemsData, error) {
-	const op = "items.RecItems.repo"
-	span, _ := opentracing.StartSpanFromContext(ctx, op)
-	defer span.Finish()
-
-	var count int64
-	if err := r.conn.QueryRow(itemCountRecQ).Scan(&count); err != nil {
-		return nil, err
-	}
-
-	rows, err := r.conn.Query(itemListRecQ, (page-1)*size, size)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	res := make([]*md.Item, 0, size)
-	for rows.Next() {
-		var i md.Item
-		if err = rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.Price,
-			&i.Src,
-			&i.Alt,
-			&i.IsHit,
-			&i.IsRec,
-		); err != nil {
-			return nil, err
-		}
-		res = append(res, &i)
+		res = append(res, i)
 	}
 
 	if err = rows.Err(); err != nil {

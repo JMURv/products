@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/ctrl"
-	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
 	"github.com/JMURv/par-pro/products/mocks"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -70,12 +69,12 @@ func TestHandler_ListFavorites(t *testing.T) {
 				mctrl.EXPECT().ListFavorites(
 					gomock.Any(),
 					uid,
-				).Return(nil, repo.ErrNotFound).Times(1)
+				).Return(nil, ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -224,12 +223,12 @@ func TestHandler_AddToFavorites(t *testing.T) {
 					gomock.Any(),
 					uid,
 					gomock.Any(),
-				).Return(nil, repo.ErrAlreadyExists).Times(1)
+				).Return(nil, ctrl.ErrAlreadyExists).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrAlreadyExists.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrAlreadyExists.Error(), errResp.Error)
 			},
 		},
 		{
@@ -245,12 +244,12 @@ func TestHandler_AddToFavorites(t *testing.T) {
 					gomock.Any(),
 					uid,
 					gomock.Any(),
-				).Return(nil, repo.ErrNotFound).Times(1)
+				).Return(nil, ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -410,12 +409,12 @@ func TestHandler_RemoveFromFavorites(t *testing.T) {
 					gomock.Any(),
 					uid,
 					gomock.Any(),
-				).Return(repo.ErrNotFound).Times(1)
+				).Return(ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{

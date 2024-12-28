@@ -2,9 +2,9 @@ package http
 
 import (
 	"errors"
+	"github.com/JMURv/par-pro/products/internal/ctrl"
 	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
-	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
 	"github.com/JMURv/par-pro/products/pkg/model"
 	utils "github.com/JMURv/par-pro/products/pkg/utils/http"
@@ -47,7 +47,7 @@ func (h *Handler) listFavorites(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.ctrl.ListFavorites(r.Context(), uid)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find favorites", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -55,7 +55,7 @@ func (h *Handler) listFavorites(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list favorites", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -91,12 +91,12 @@ func (h *Handler) addToFavorites(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.ctrl.AddToFavorites(r.Context(), uid, req.ItemID)
-	if err != nil && errors.Is(err, repo.ErrAlreadyExists) {
+	if err != nil && errors.Is(err, ctrl.ErrAlreadyExists) {
 		c = http.StatusConflict
 		zap.L().Debug("failed to add to favorites", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
 		return
-	} else if err != nil && errors.Is(err, repo.ErrNotFound) {
+	} else if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to find item", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -104,7 +104,7 @@ func (h *Handler) addToFavorites(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to add to favorites", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h *Handler) removeFromFavorites(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.ctrl.RemoveFromFavorites(r.Context(), uid, req.ItemID)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("Failed to find favorite", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -148,7 +148,7 @@ func (h *Handler) removeFromFavorites(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to remove from favorites", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 

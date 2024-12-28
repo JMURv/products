@@ -2,9 +2,9 @@ package http
 
 import (
 	"errors"
+	"github.com/JMURv/par-pro/products/internal/ctrl"
 	mid "github.com/JMURv/par-pro/products/internal/hdl/http/middleware"
 	metrics "github.com/JMURv/par-pro/products/internal/metrics/prometheus"
-	repo "github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/internal/validation"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -90,7 +90,7 @@ func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		zap.L().Debug("failed to search filters", zap.String("op", op), zap.String("query", query), zap.Error(err))
 		c = http.StatusInternalServerError
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *Handler) categorySearch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		zap.L().Debug("failed to search categories", zap.String("op", op), zap.String("query", query), zap.Error(err))
 		c = http.StatusInternalServerError
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) listCategoryFilters(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list category filters", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -170,7 +170,7 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to list categories", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -200,10 +200,15 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.ctrl.CreateCategory(r.Context(), req)
-	if err != nil {
+	if err != nil && errors.Is(err, ctrl.ErrAlreadyExists) {
+		c = http.StatusConflict
+		zap.L().Debug("category already exists", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to create category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -218,7 +223,7 @@ func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	res, err := h.ctrl.GetCategoryBySlug(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("failed to found category", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -226,7 +231,7 @@ func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to get category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -256,7 +261,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.ctrl.UpdateCategory(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"), req)
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("category not found", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -264,7 +269,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to update category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 
@@ -279,7 +284,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	err := h.ctrl.DeleteCategory(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
-	if err != nil && errors.Is(err, repo.ErrNotFound) {
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
 		c = http.StatusNotFound
 		zap.L().Debug("category not found", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, err)
@@ -287,7 +292,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to delete category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
 

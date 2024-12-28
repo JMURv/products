@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"github.com/JMURv/par-pro/products/internal/ctrl"
-	"github.com/JMURv/par-pro/products/internal/repo"
 	"github.com/JMURv/par-pro/products/mocks"
 	"github.com/JMURv/par-pro/products/pkg/consts"
 	"github.com/JMURv/par-pro/products/pkg/model"
@@ -625,12 +624,12 @@ func TestHandler_GetCategory(t *testing.T) {
 			resType: &utils.ErrorResponse{},
 			status:  http.StatusNotFound,
 			mockExpect: func() {
-				mctrl.EXPECT().GetCategoryBySlug(gomock.Any(), "invalid-slug").Return(nil, repo.ErrNotFound).Times(1)
+				mctrl.EXPECT().GetCategoryBySlug(gomock.Any(), "invalid-slug").Return(nil, ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -761,12 +760,12 @@ func TestHandler_UpdateCategory(t *testing.T) {
 					gomock.Any(),
 					"non-existent-category",
 					validCategory,
-				).Return(repo.ErrNotFound).Times(1)
+				).Return(ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{
@@ -866,12 +865,12 @@ func TestHandler_DeleteCategory(t *testing.T) {
 			resType: &utils.ErrorResponse{},
 			status:  http.StatusNotFound,
 			mockExpect: func() {
-				mctrl.EXPECT().DeleteCategory(gomock.Any(), "invalid-slug").Return(repo.ErrNotFound).Times(1)
+				mctrl.EXPECT().DeleteCategory(gomock.Any(), "invalid-slug").Return(ctrl.ErrNotFound).Times(1)
 			},
 			expectedResp: func(t *testing.T, res any) {
 				errResp, ok := res.(*utils.ErrorResponse)
 				require.True(t, ok)
-				assert.Equal(t, repo.ErrNotFound.Error(), errResp.Error)
+				assert.Equal(t, ctrl.ErrNotFound.Error(), errResp.Error)
 			},
 		},
 		{

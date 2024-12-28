@@ -59,9 +59,10 @@ func (c *Controller) AddToFavorites(ctx context.Context, uid uuid.UUID, itemID u
 
 	res, err := c.repo.AddToFavorites(ctx, uid, itemID)
 	if err != nil && errors.Is(err, repo.ErrAlreadyExists) {
+		zap.L().Debug("failed to add to favorites", zap.Error(err), zap.String("op", op))
 		return nil, ErrAlreadyExists
 	} else if err != nil && errors.Is(err, repo.ErrNotFound) {
-		zap.L().Debug("failed to find item", zap.Error(err), zap.String("op", op))
+		zap.L().Debug("failed to find favorite", zap.Error(err), zap.String("op", op))
 		return nil, ErrNotFound
 	} else if err != nil {
 		zap.L().Debug("failed to add to favorites", zap.Error(err), zap.String("op", op))

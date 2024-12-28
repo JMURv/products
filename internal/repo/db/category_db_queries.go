@@ -102,7 +102,3 @@ const filterCreateQ = `
 const filterDeleteQ = `
 	DELETE FROM filter WHERE id = ? AND category_slug = ?
 `
-
-const itemCategoryDeleteByCategoryQ = `
-	DELETE FROM item_category WHERE category_slug = $1
-`

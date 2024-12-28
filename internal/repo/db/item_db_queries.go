@@ -1,10 +1,8 @@
 package db
 
 const itemCountQ = `SELECT COUNT(*) FROM item`
-const itemCountHitQ = `SELECT COUNT(*) FROM item WHERE is_hit = TRUE;`
 const itemCountRecQ = `SELECT COUNT(*) FROM item WHERE is_rec = TRUE;`
 const itemCountAttrsQ = `SELECT COUNT(*) FROM item_attr WHERE name ILIKE ?;`
-
 const itemSearchAttrQ = `SELECT id, name, value FROM item_attr WHERE name ILIKE ? OFFSET ? LIMIT ?`
 
 const itemListQ = `SELECT 
@@ -81,17 +79,20 @@ const itemListRelated = `SELECT
 	WHERE item_id = $1;
 `
 
-const itemListHitQ = `
-	SELECT i.id, i.title, i.price, i.src, i.alt, i.is_hit, i.is_rec
-	FROM item i
-	WHERE is_hit = TRUE
-	OFFSET $1 LIMIT $2;
+const itemCountLabelQ = `
+SELECT COUNT(*) 
+FROM item 
+JOIN item_label il ON il.item_id = item.id
+JOIN label l ON il.label_id = l.id
+WHERE l.name = ?;
 `
 
-const itemListRecQ = `
+const itemListLabelQ = `
 	SELECT i.id, i.title, i.price, i.src, i.alt, i.is_hit, i.is_rec
 	FROM item i
-	WHERE is_rec = TRUE
+	JOIN item_label il ON il.item_id = i.id
+	JOIN label l ON il.label_id = l.id
+	WHERE l.name = ?
 	OFFSET $1 LIMIT $2;
 `
 

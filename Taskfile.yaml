@@ -43,4 +43,3 @@ tasks:
       - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
       - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
       - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
-      - mockgen -source="./internal/discovery/discovery.go" -destination="mocks/mock_discovery.go" -package=mocks
