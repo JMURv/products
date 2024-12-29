@@ -1,0 +1,1 @@
+[![Go Coverage](https://github.com/JMURv/par-pro-products/wiki/coverage.svg)](https://raw.githack.com/wiki/JMURv/par-pro-products/coverage.html)
