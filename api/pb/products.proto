@@ -115,8 +115,13 @@ service Item {
   rpc DeleteItem(uuidMsg) returns (Empty);
   rpc ListRelatedItems(uuidMsg) returns (RelatedItemsList);
   rpc listCategoryItems(listCategoryItemsReq) returns (PaginatedItemRes);
-  rpc HitItems(ListReq) returns (PaginatedItemRes);
-  rpc RecItems(ListReq) returns (PaginatedItemRes);
+  rpc ListItemsByLabel(ListItemsByLabelReq) returns (PaginatedItemRes);
+}
+
+message ListItemsByLabelReq {
+  uint32 page = 1;
+  uint32 size = 2;
+  string label = 3;
 }
 
 message listCategoryItemsReq {

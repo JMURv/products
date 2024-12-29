@@ -328,7 +328,7 @@ func (h *Handler) ListCategoryItems(ctx context.Context, req *pb.ListCategoryIte
 	}, nil
 }
 
-func (h *Handler) HitItems(ctx context.Context, req *pb.ListReq) (*pb.PaginatedItemRes, error) {
+func (h *Handler) ListItemsByLabel(ctx context.Context, req *pb.ListItemsByLabelReq) (*pb.PaginatedItemRes, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.HitItems.handler"
 	span := opentracing.GlobalTracer().StartSpan(op)
@@ -338,44 +338,13 @@ func (h *Handler) HitItems(ctx context.Context, req *pb.ListReq) (*pb.PaginatedI
 		metrics.ObserveRequest(time.Since(s), int(c), op)
 	}()
 
-	if req == nil || req.Page <= 0 || req.Size <= 0 {
+	if req == nil || req.Label == "" || req.Page <= 0 || req.Size <= 0 {
 		c = codes.InvalidArgument
 		zap.L().Debug("failed to decode request", zap.String("op", op))
 		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
 	}
 
-	res, err := h.ctrl.HitItems(ctx, int(req.Page), int(req.Size))
-	if err != nil {
-		c = codes.Internal
-		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
-	}
-
-	return &pb.PaginatedItemRes{
-		Data:        mapper.ListItemToProto(res.Data),
-		Count:       res.Count,
-		TotalPages:  int64(res.TotalPages),
-		CurrentPage: int64(res.CurrentPage),
-		HasNextPage: res.HasNextPage,
-	}, nil
-}
-
-func (h *Handler) RecItems(ctx context.Context, req *pb.ListReq) (*pb.PaginatedItemRes, error) {
-	s, c := time.Now(), codes.OK
-	const op = "items.RecItems.handler"
-	span := opentracing.GlobalTracer().StartSpan(op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer func() {
-		span.Finish()
-		metrics.ObserveRequest(time.Since(s), int(c), op)
-	}()
-
-	if req == nil || req.Page <= 0 || req.Size <= 0 {
-		c = codes.InvalidArgument
-		zap.L().Debug("failed to decode request", zap.String("op", op))
-		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
-	}
-
-	res, err := h.ctrl.RecItems(ctx, int(req.Page), int(req.Size))
+	res, err := h.ctrl.ListItemsByLabel(ctx, req.Label, int(req.Page), int(req.Size))
 	if err != nil {
 		c = codes.Internal
 		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())

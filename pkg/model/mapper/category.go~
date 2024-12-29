@@ -16,12 +16,12 @@ func ListCategoryToProto(req []*md.Category) []*pb.CategoryMsg {
 
 func CategoryToProto(req *md.Category) *pb.CategoryMsg {
 	res := &pb.CategoryMsg{
-		Slug:            req.Slug,
-		Title:           req.Title,
-		ProductQuantity: uint64(req.ProductQuantity),
-		Src:             req.Src,
-		Alt:             req.Alt,
-		ParentSlug:      req.ParentSlug,
+		Slug:               req.Slug,
+		Title:              req.Title,
+		ProductQuantity:    uint64(req.ProductQuantity),
+		Src:                req.Src,
+		Alt:                req.Alt,
+		ParentSlug:         req.ParentSlug,
 		CreatedAt: &timestamppb.Timestamp{
 			Seconds: req.CreatedAt.Unix(),
 			Nanos:   int32(req.CreatedAt.Nanosecond()),

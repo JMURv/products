@@ -39,32 +39,17 @@ func (m *MockSSOSvc) EXPECT() *MockSSOSvcMockRecorder {
 	return m.recorder
 }
 
-// GetIDByToken mocks base method.
-func (m *MockSSOSvc) GetIDByToken(ctx context.Context, token string) (string, error) {
+// ParseClaims mocks base method.
+func (m *MockSSOSvc) ParseClaims(ctx context.Context, token string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetIDByToken", ctx, token)
+	ret := m.ctrl.Call(m, "ParseClaims", ctx, token)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetIDByToken indicates an expected call of GetIDByToken.
-func (mr *MockSSOSvcMockRecorder) GetIDByToken(ctx, token any) *gomock.Call {
+// ParseClaims indicates an expected call of ParseClaims.
+func (mr *MockSSOSvcMockRecorder) ParseClaims(ctx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIDByToken", reflect.TypeOf((*MockSSOSvc)(nil).GetIDByToken), ctx, token)
-}
-
-// ValidateToken mocks base method.
-func (m *MockSSOSvc) ValidateToken(ctx context.Context, token string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateToken", ctx, token)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ValidateToken indicates an expected call of ValidateToken.
-func (mr *MockSSOSvcMockRecorder) ValidateToken(ctx, token any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateToken", reflect.TypeOf((*MockSSOSvc)(nil).ValidateToken), ctx, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseClaims", reflect.TypeOf((*MockSSOSvc)(nil).ParseClaims), ctx, token)
 }

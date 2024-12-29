@@ -39,7 +39,7 @@ func TestAuthMiddleware(t *testing.T) {
 			authHeader:     "Bearer valid-token",
 			expectedStatus: http.StatusOK,
 			mockGetIDToken: func() {
-				ssoctrl.EXPECT().GetIDByToken(gomock.Any(), "valid-token").Return("user-id", nil).Times(1)
+				ssoctrl.EXPECT().ParseClaims(gomock.Any(), "valid-token").Return("user-id", nil).Times(1)
 			},
 		},
 		{
@@ -47,7 +47,7 @@ func TestAuthMiddleware(t *testing.T) {
 			authHeader:     "Bearer invalid-token",
 			expectedStatus: http.StatusUnauthorized,
 			mockGetIDToken: func() {
-				ssoctrl.EXPECT().GetIDByToken(gomock.Any(), "invalid-token").Return(
+				ssoctrl.EXPECT().ParseClaims(gomock.Any(), "invalid-token").Return(
 					"",
 					errors.New("invalid token"),
 				).Times(1)

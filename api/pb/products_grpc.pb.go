@@ -28,8 +28,7 @@ const (
 	Item_DeleteItem_FullMethodName        = "/user.Item/DeleteItem"
 	Item_ListRelatedItems_FullMethodName  = "/user.Item/ListRelatedItems"
 	Item_ListCategoryItems_FullMethodName = "/user.Item/listCategoryItems"
-	Item_HitItems_FullMethodName          = "/user.Item/HitItems"
-	Item_RecItems_FullMethodName          = "/user.Item/RecItems"
+	Item_ListItemsByLabel_FullMethodName  = "/user.Item/ListItemsByLabel"
 )
 
 // ItemClient is the client API for Item service.
@@ -45,8 +44,7 @@ type ItemClient interface {
 	DeleteItem(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*Empty, error)
 	ListRelatedItems(ctx context.Context, in *UuidMsg, opts ...grpc.CallOption) (*RelatedItemsList, error)
 	ListCategoryItems(ctx context.Context, in *ListCategoryItemsReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
-	HitItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
-	RecItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
+	ListItemsByLabel(ctx context.Context, in *ListItemsByLabelReq, opts ...grpc.CallOption) (*PaginatedItemRes, error)
 }
 
 type itemClient struct {
@@ -147,20 +145,10 @@ func (c *itemClient) ListCategoryItems(ctx context.Context, in *ListCategoryItem
 	return out, nil
 }
 
-func (c *itemClient) HitItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error) {
+func (c *itemClient) ListItemsByLabel(ctx context.Context, in *ListItemsByLabelReq, opts ...grpc.CallOption) (*PaginatedItemRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PaginatedItemRes)
-	err := c.cc.Invoke(ctx, Item_HitItems_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *itemClient) RecItems(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedItemRes, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PaginatedItemRes)
-	err := c.cc.Invoke(ctx, Item_RecItems_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Item_ListItemsByLabel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,8 +168,7 @@ type ItemServer interface {
 	DeleteItem(context.Context, *UuidMsg) (*Empty, error)
 	ListRelatedItems(context.Context, *UuidMsg) (*RelatedItemsList, error)
 	ListCategoryItems(context.Context, *ListCategoryItemsReq) (*PaginatedItemRes, error)
-	HitItems(context.Context, *ListReq) (*PaginatedItemRes, error)
-	RecItems(context.Context, *ListReq) (*PaginatedItemRes, error)
+	ListItemsByLabel(context.Context, *ListItemsByLabelReq) (*PaginatedItemRes, error)
 	mustEmbedUnimplementedItemServer()
 }
 
@@ -219,11 +206,8 @@ func (UnimplementedItemServer) ListRelatedItems(context.Context, *UuidMsg) (*Rel
 func (UnimplementedItemServer) ListCategoryItems(context.Context, *ListCategoryItemsReq) (*PaginatedItemRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCategoryItems not implemented")
 }
-func (UnimplementedItemServer) HitItems(context.Context, *ListReq) (*PaginatedItemRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method HitItems not implemented")
-}
-func (UnimplementedItemServer) RecItems(context.Context, *ListReq) (*PaginatedItemRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RecItems not implemented")
+func (UnimplementedItemServer) ListItemsByLabel(context.Context, *ListItemsByLabelReq) (*PaginatedItemRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListItemsByLabel not implemented")
 }
 func (UnimplementedItemServer) mustEmbedUnimplementedItemServer() {}
 func (UnimplementedItemServer) testEmbeddedByValue()              {}
@@ -408,38 +392,20 @@ func _Item_ListCategoryItems_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Item_HitItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListReq)
+func _Item_ListItemsByLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListItemsByLabelReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ItemServer).HitItems(ctx, in)
+		return srv.(ItemServer).ListItemsByLabel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Item_HitItems_FullMethodName,
+		FullMethod: Item_ListItemsByLabel_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ItemServer).HitItems(ctx, req.(*ListReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Item_RecItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ItemServer).RecItems(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Item_RecItems_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ItemServer).RecItems(ctx, req.(*ListReq))
+		return srv.(ItemServer).ListItemsByLabel(ctx, req.(*ListItemsByLabelReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -488,12 +454,8 @@ var Item_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Item_ListCategoryItems_Handler,
 		},
 		{
-			MethodName: "HitItems",
-			Handler:    _Item_HitItems_Handler,
-		},
-		{
-			MethodName: "RecItems",
-			Handler:    _Item_RecItems_Handler,
+			MethodName: "ListItemsByLabel",
+			Handler:    _Item_ListItemsByLabel_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

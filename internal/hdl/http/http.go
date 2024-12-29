@@ -77,7 +77,7 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
-			token, err := h.sso.GetIDByToken(r.Context(), tokenStr)
+			token, err := h.sso.ParseClaims(r.Context(), tokenStr)
 			if err != nil {
 				utils.ErrResponse(w, http.StatusUnauthorized, err)
 				return
