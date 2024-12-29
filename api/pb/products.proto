@@ -153,11 +153,11 @@ message PaginatedItemAttrsRes {
 
 service Category {
   rpc ListCategories(ListReq) returns (PaginatedCategoryRes);
-  rpc CreateCategory(CategoryMsg) returns (CategoryMsg);
+  rpc CreateCategory(CategoryMsg) returns (slugMsg);
   rpc CategorySearch(SearchReq) returns (PaginatedCategoryRes);
   rpc CategoryFiltersSearch(SearchReq) returns (PaginatedFilterRes);
   rpc GetCategory(slugMsg) returns (CategoryMsg);
-  rpc UpdateCategory(CategoryWithSlug) returns (CategoryMsg);
+  rpc UpdateCategory(CategoryWithSlug) returns (Empty);
   rpc DeleteCategory(slugMsg) returns (Empty);
   rpc ListCategoryFilters(slugMsg) returns (FilterListRes);
 }
@@ -208,9 +208,9 @@ message UserAndItemIds {
 service Promotion {
   rpc ListPromotions(ListReq) returns (PaginatedPromoRes);
   rpc PromotionSearch(SearchReq) returns (PaginatedPromoRes);
-  rpc CreatePromotion(PromoMsg) returns (PromoMsg);
+  rpc CreatePromotion(PromoMsg) returns (slugMsg);
   rpc GetPromotion(slugMsg) returns (PromoMsg);
-  rpc UpdatePromotion(PromoWithSlug) returns (PromoMsg);
+  rpc UpdatePromotion(PromoWithSlug) returns (Empty);
   rpc DeletePromotion(slugMsg) returns (Empty);
   rpc ListPromotionItems(ListPromotionItemsReq) returns (PaginatedPromoItemsRes);
 }

@@ -3,7 +3,7 @@ module github.com/JMURv/par-pro/products
 go 1.23.1
 
 require (
-	github.com/JMURv/protos v1.1.2
+	github.com/JMURv/protos v1.1.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/golang-migrate/migrate/v4 v4.18.1

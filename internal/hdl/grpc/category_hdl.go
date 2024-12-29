@@ -47,38 +47,6 @@ func (h *Handler) CategorySearch(ctx context.Context, req *pb.SearchReq) (*pb.Pa
 	}, nil
 }
 
-func (h *Handler) CategoryFiltersSearch(ctx context.Context, req *pb.SearchReq) (*pb.PaginatedFilterRes, error) {
-	s, c := time.Now(), codes.OK
-	const op = "items.CategoryFiltersSearch.handler"
-	span := opentracing.GlobalTracer().StartSpan(op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer func() {
-		span.Finish()
-		metrics.ObserveRequest(time.Since(s), int(c), op)
-	}()
-
-	q, page, size := req.Query, req.Page, req.Size
-	if q == "" || page == 0 || size == 0 {
-		c = codes.InvalidArgument
-		zap.L().Debug("failed to decode request", zap.String("op", op))
-		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
-	}
-
-	res, err := h.ctrl.CategoryFiltersSearch(ctx, q, int(page), int(size))
-	if err != nil {
-		c = codes.Internal
-		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
-	}
-
-	return &pb.PaginatedFilterRes{
-		Data:        mapper.ListFiltersToProto(res.Data),
-		Count:       res.Count,
-		TotalPages:  int64(res.TotalPages),
-		CurrentPage: int64(res.CurrentPage),
-		HasNextPage: res.HasNextPage,
-	}, nil
-}
-
 func (h *Handler) ListCategories(ctx context.Context, req *pb.ListReq) (*pb.PaginatedCategoryRes, error) {
 	s, c := time.Now(), codes.OK
 	const op = "items.ListCategories.handler"
@@ -108,33 +76,6 @@ func (h *Handler) ListCategories(ctx context.Context, req *pb.ListReq) (*pb.Pagi
 		TotalPages:  int64(res.TotalPages),
 		CurrentPage: int64(res.CurrentPage),
 		HasNextPage: res.HasNextPage,
-	}, nil
-}
-
-func (h *Handler) ListCategoryFilters(ctx context.Context, req *pb.SlugMsg) (*pb.FilterListRes, error) {
-	s, c := time.Now(), codes.OK
-	const op = "items.ListCategoryFilters.handler"
-	span := opentracing.GlobalTracer().StartSpan(op)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	defer func() {
-		span.Finish()
-		metrics.ObserveRequest(time.Since(s), int(c), op)
-	}()
-
-	if req == nil || req.Slug == "" {
-		c = codes.InvalidArgument
-		zap.L().Debug("failed to decode request", zap.String("op", op))
-		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
-	}
-
-	res, err := h.ctrl.ListCategoryFilters(ctx, req.Slug)
-	if err != nil {
-		c = codes.Internal
-		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
-	}
-
-	return &pb.FilterListRes{
-		Data: mapper.ListFiltersToProto(res),
 	}, nil
 }
 
@@ -259,4 +200,63 @@ func (h *Handler) DeleteCategory(ctx context.Context, req *pb.SlugMsg) (*pb.Empt
 	}
 
 	return &pb.Empty{}, nil
+}
+
+func (h *Handler) CategoryFiltersSearch(ctx context.Context, req *pb.SearchReq) (*pb.PaginatedFilterRes, error) {
+	s, c := time.Now(), codes.OK
+	const op = "items.CategoryFiltersSearch.handler"
+	span := opentracing.GlobalTracer().StartSpan(op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer func() {
+		span.Finish()
+		metrics.ObserveRequest(time.Since(s), int(c), op)
+	}()
+
+	q, page, size := req.Query, req.Page, req.Size
+	if q == "" || page == 0 || size == 0 {
+		c = codes.InvalidArgument
+		zap.L().Debug("failed to decode request", zap.String("op", op))
+		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
+	}
+
+	res, err := h.ctrl.CategoryFiltersSearch(ctx, q, int(page), int(size))
+	if err != nil {
+		c = codes.Internal
+		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
+	}
+
+	return &pb.PaginatedFilterRes{
+		Data:        mapper.ListFiltersToProto(res.Data),
+		Count:       res.Count,
+		TotalPages:  int64(res.TotalPages),
+		CurrentPage: int64(res.CurrentPage),
+		HasNextPage: res.HasNextPage,
+	}, nil
+}
+
+func (h *Handler) ListCategoryFilters(ctx context.Context, req *pb.SlugMsg) (*pb.FilterListRes, error) {
+	s, c := time.Now(), codes.OK
+	const op = "items.ListCategoryFilters.handler"
+	span := opentracing.GlobalTracer().StartSpan(op)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer func() {
+		span.Finish()
+		metrics.ObserveRequest(time.Since(s), int(c), op)
+	}()
+
+	if req == nil || req.Slug == "" {
+		c = codes.InvalidArgument
+		zap.L().Debug("failed to decode request", zap.String("op", op))
+		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
+	}
+
+	res, err := h.ctrl.ListCategoryFilters(ctx, req.Slug)
+	if err != nil {
+		c = codes.Internal
+		return nil, status.Errorf(c, ctrl.ErrInternalError.Error())
+	}
+
+	return &pb.FilterListRes{
+		Data: mapper.ListFiltersToProto(res),
+	}, nil
 }

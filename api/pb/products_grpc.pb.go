@@ -516,11 +516,11 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CategoryClient interface {
 	ListCategories(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedCategoryRes, error)
-	CreateCategory(ctx context.Context, in *CategoryMsg, opts ...grpc.CallOption) (*CategoryMsg, error)
+	CreateCategory(ctx context.Context, in *CategoryMsg, opts ...grpc.CallOption) (*SlugMsg, error)
 	CategorySearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedCategoryRes, error)
 	CategoryFiltersSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedFilterRes, error)
 	GetCategory(ctx context.Context, in *SlugMsg, opts ...grpc.CallOption) (*CategoryMsg, error)
-	UpdateCategory(ctx context.Context, in *CategoryWithSlug, opts ...grpc.CallOption) (*CategoryMsg, error)
+	UpdateCategory(ctx context.Context, in *CategoryWithSlug, opts ...grpc.CallOption) (*Empty, error)
 	DeleteCategory(ctx context.Context, in *SlugMsg, opts ...grpc.CallOption) (*Empty, error)
 	ListCategoryFilters(ctx context.Context, in *SlugMsg, opts ...grpc.CallOption) (*FilterListRes, error)
 }
@@ -543,9 +543,9 @@ func (c *categoryClient) ListCategories(ctx context.Context, in *ListReq, opts .
 	return out, nil
 }
 
-func (c *categoryClient) CreateCategory(ctx context.Context, in *CategoryMsg, opts ...grpc.CallOption) (*CategoryMsg, error) {
+func (c *categoryClient) CreateCategory(ctx context.Context, in *CategoryMsg, opts ...grpc.CallOption) (*SlugMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CategoryMsg)
+	out := new(SlugMsg)
 	err := c.cc.Invoke(ctx, Category_CreateCategory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -583,9 +583,9 @@ func (c *categoryClient) GetCategory(ctx context.Context, in *SlugMsg, opts ...g
 	return out, nil
 }
 
-func (c *categoryClient) UpdateCategory(ctx context.Context, in *CategoryWithSlug, opts ...grpc.CallOption) (*CategoryMsg, error) {
+func (c *categoryClient) UpdateCategory(ctx context.Context, in *CategoryWithSlug, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CategoryMsg)
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, Category_UpdateCategory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -618,11 +618,11 @@ func (c *categoryClient) ListCategoryFilters(ctx context.Context, in *SlugMsg, o
 // for forward compatibility.
 type CategoryServer interface {
 	ListCategories(context.Context, *ListReq) (*PaginatedCategoryRes, error)
-	CreateCategory(context.Context, *CategoryMsg) (*CategoryMsg, error)
+	CreateCategory(context.Context, *CategoryMsg) (*SlugMsg, error)
 	CategorySearch(context.Context, *SearchReq) (*PaginatedCategoryRes, error)
 	CategoryFiltersSearch(context.Context, *SearchReq) (*PaginatedFilterRes, error)
 	GetCategory(context.Context, *SlugMsg) (*CategoryMsg, error)
-	UpdateCategory(context.Context, *CategoryWithSlug) (*CategoryMsg, error)
+	UpdateCategory(context.Context, *CategoryWithSlug) (*Empty, error)
 	DeleteCategory(context.Context, *SlugMsg) (*Empty, error)
 	ListCategoryFilters(context.Context, *SlugMsg) (*FilterListRes, error)
 	mustEmbedUnimplementedCategoryServer()
@@ -638,7 +638,7 @@ type UnimplementedCategoryServer struct{}
 func (UnimplementedCategoryServer) ListCategories(context.Context, *ListReq) (*PaginatedCategoryRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCategories not implemented")
 }
-func (UnimplementedCategoryServer) CreateCategory(context.Context, *CategoryMsg) (*CategoryMsg, error) {
+func (UnimplementedCategoryServer) CreateCategory(context.Context, *CategoryMsg) (*SlugMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCategory not implemented")
 }
 func (UnimplementedCategoryServer) CategorySearch(context.Context, *SearchReq) (*PaginatedCategoryRes, error) {
@@ -650,7 +650,7 @@ func (UnimplementedCategoryServer) CategoryFiltersSearch(context.Context, *Searc
 func (UnimplementedCategoryServer) GetCategory(context.Context, *SlugMsg) (*CategoryMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCategory not implemented")
 }
-func (UnimplementedCategoryServer) UpdateCategory(context.Context, *CategoryWithSlug) (*CategoryMsg, error) {
+func (UnimplementedCategoryServer) UpdateCategory(context.Context, *CategoryWithSlug) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateCategory not implemented")
 }
 func (UnimplementedCategoryServer) DeleteCategory(context.Context, *SlugMsg) (*Empty, error) {
@@ -1062,9 +1062,9 @@ const (
 type PromotionClient interface {
 	ListPromotions(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedPromoRes, error)
 	PromotionSearch(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*PaginatedPromoRes, error)
-	CreatePromotion(ctx context.Context, in *PromoMsg, opts ...grpc.CallOption) (*PromoMsg, error)
+	CreatePromotion(ctx context.Context, in *PromoMsg, opts ...grpc.CallOption) (*SlugMsg, error)
 	GetPromotion(ctx context.Context, in *SlugMsg, opts ...grpc.CallOption) (*PromoMsg, error)
-	UpdatePromotion(ctx context.Context, in *PromoWithSlug, opts ...grpc.CallOption) (*PromoMsg, error)
+	UpdatePromotion(ctx context.Context, in *PromoWithSlug, opts ...grpc.CallOption) (*Empty, error)
 	DeletePromotion(ctx context.Context, in *SlugMsg, opts ...grpc.CallOption) (*Empty, error)
 	ListPromotionItems(ctx context.Context, in *ListPromotionItemsReq, opts ...grpc.CallOption) (*PaginatedPromoItemsRes, error)
 }
@@ -1097,9 +1097,9 @@ func (c *promotionClient) PromotionSearch(ctx context.Context, in *SearchReq, op
 	return out, nil
 }
 
-func (c *promotionClient) CreatePromotion(ctx context.Context, in *PromoMsg, opts ...grpc.CallOption) (*PromoMsg, error) {
+func (c *promotionClient) CreatePromotion(ctx context.Context, in *PromoMsg, opts ...grpc.CallOption) (*SlugMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PromoMsg)
+	out := new(SlugMsg)
 	err := c.cc.Invoke(ctx, Promotion_CreatePromotion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -1117,9 +1117,9 @@ func (c *promotionClient) GetPromotion(ctx context.Context, in *SlugMsg, opts ..
 	return out, nil
 }
 
-func (c *promotionClient) UpdatePromotion(ctx context.Context, in *PromoWithSlug, opts ...grpc.CallOption) (*PromoMsg, error) {
+func (c *promotionClient) UpdatePromotion(ctx context.Context, in *PromoWithSlug, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PromoMsg)
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, Promotion_UpdatePromotion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -1153,9 +1153,9 @@ func (c *promotionClient) ListPromotionItems(ctx context.Context, in *ListPromot
 type PromotionServer interface {
 	ListPromotions(context.Context, *ListReq) (*PaginatedPromoRes, error)
 	PromotionSearch(context.Context, *SearchReq) (*PaginatedPromoRes, error)
-	CreatePromotion(context.Context, *PromoMsg) (*PromoMsg, error)
+	CreatePromotion(context.Context, *PromoMsg) (*SlugMsg, error)
 	GetPromotion(context.Context, *SlugMsg) (*PromoMsg, error)
-	UpdatePromotion(context.Context, *PromoWithSlug) (*PromoMsg, error)
+	UpdatePromotion(context.Context, *PromoWithSlug) (*Empty, error)
 	DeletePromotion(context.Context, *SlugMsg) (*Empty, error)
 	ListPromotionItems(context.Context, *ListPromotionItemsReq) (*PaginatedPromoItemsRes, error)
 	mustEmbedUnimplementedPromotionServer()
@@ -1174,13 +1174,13 @@ func (UnimplementedPromotionServer) ListPromotions(context.Context, *ListReq) (*
 func (UnimplementedPromotionServer) PromotionSearch(context.Context, *SearchReq) (*PaginatedPromoRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PromotionSearch not implemented")
 }
-func (UnimplementedPromotionServer) CreatePromotion(context.Context, *PromoMsg) (*PromoMsg, error) {
+func (UnimplementedPromotionServer) CreatePromotion(context.Context, *PromoMsg) (*SlugMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePromotion not implemented")
 }
 func (UnimplementedPromotionServer) GetPromotion(context.Context, *SlugMsg) (*PromoMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPromotion not implemented")
 }
-func (UnimplementedPromotionServer) UpdatePromotion(context.Context, *PromoWithSlug) (*PromoMsg, error) {
+func (UnimplementedPromotionServer) UpdatePromotion(context.Context, *PromoWithSlug) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePromotion not implemented")
 }
 func (UnimplementedPromotionServer) DeletePromotion(context.Context, *SlugMsg) (*Empty, error) {

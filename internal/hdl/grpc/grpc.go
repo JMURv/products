@@ -91,7 +91,7 @@ func AuthUnaryInterceptor(sso sso.SSOSvc) grpc.UnaryServerInterceptor {
 			tokenStr = tokenStr[7:]
 		}
 
-		uid, err := sso.GetIDByToken(ctx, tokenStr)
+		uid, err := sso.ParseClaims(ctx, tokenStr)
 		if err != nil {
 			return nil, err
 		}

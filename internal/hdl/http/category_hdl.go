@@ -63,40 +63,6 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 	)
 }
 
-func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) {
-	s, c := time.Now(), http.StatusOK
-	const op = "category.categoryFiltersSearch.handler"
-	defer func() {
-		metrics.ObserveRequest(time.Since(s), c, op)
-	}()
-
-	query := r.URL.Query().Get("q")
-	if len(query) < 3 {
-		utils.SuccessResponse(w, c, []string{})
-		return
-	}
-
-	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		page = 1
-	}
-
-	size, err := strconv.Atoi(r.URL.Query().Get("size"))
-	if err != nil {
-		size = 10
-	}
-
-	res, err := h.ctrl.CategoryFiltersSearch(r.Context(), query, page, size)
-	if err != nil {
-		zap.L().Debug("failed to search filters", zap.String("op", op), zap.String("query", query), zap.Error(err))
-		c = http.StatusInternalServerError
-		utils.ErrResponse(w, c, ctrl.ErrInternalError)
-		return
-	}
-
-	utils.SuccessPaginatedResponse(w, c, res)
-}
-
 func (h *Handler) categorySearch(w http.ResponseWriter, r *http.Request) {
 	s, c := time.Now(), http.StatusOK
 	const op = "category.search.handler"
@@ -131,24 +97,6 @@ func (h *Handler) categorySearch(w http.ResponseWriter, r *http.Request) {
 	utils.SuccessPaginatedResponse(w, c, res)
 }
 
-func (h *Handler) listCategoryFilters(w http.ResponseWriter, r *http.Request) {
-	s, c := time.Now(), http.StatusOK
-	const op = "category.listCategoryFilters.handler"
-	defer func() {
-		metrics.ObserveRequest(time.Since(s), c, op)
-	}()
-
-	res, err := h.ctrl.ListCategoryFilters(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/filters/"))
-	if err != nil {
-		c = http.StatusInternalServerError
-		zap.L().Debug("failed to list category filters", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, ctrl.ErrInternalError)
-		return
-	}
-
-	utils.SuccessResponse(w, c, res)
-}
-
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	s, c := time.Now(), http.StatusOK
 	const op = "category.listCategories.handler"
@@ -175,6 +123,29 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SuccessPaginatedResponse(w, c, res)
+}
+
+func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "category.getCategory.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	res, err := h.ctrl.GetCategoryBySlug(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
+	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
+		c = http.StatusNotFound
+		zap.L().Debug("failed to found category", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, err)
+		return
+	} else if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to get category", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		return
+	}
+
+	utils.SuccessResponse(w, c, res)
 }
 
 func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
@@ -208,29 +179,6 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		c = http.StatusInternalServerError
 		zap.L().Debug("failed to create category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, ctrl.ErrInternalError)
-		return
-	}
-
-	utils.SuccessResponse(w, c, res)
-}
-
-func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
-	s, c := time.Now(), http.StatusOK
-	const op = "category.getCategory.handler"
-	defer func() {
-		metrics.ObserveRequest(time.Since(s), c, op)
-	}()
-
-	res, err := h.ctrl.GetCategoryBySlug(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/"))
-	if err != nil && errors.Is(err, ctrl.ErrNotFound) {
-		c = http.StatusNotFound
-		zap.L().Debug("failed to found category", zap.String("op", op), zap.Error(err))
-		utils.ErrResponse(w, c, err)
-		return
-	} else if err != nil {
-		c = http.StatusInternalServerError
-		zap.L().Debug("failed to get category", zap.String("op", op), zap.Error(err))
 		utils.ErrResponse(w, c, ctrl.ErrInternalError)
 		return
 	}
@@ -297,4 +245,56 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SuccessResponse(w, c, "OK")
+}
+
+func (h *Handler) categoryFiltersSearch(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "category.categoryFiltersSearch.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	query := r.URL.Query().Get("q")
+	if len(query) < 3 {
+		utils.SuccessResponse(w, c, []string{})
+		return
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		size = 10
+	}
+
+	res, err := h.ctrl.CategoryFiltersSearch(r.Context(), query, page, size)
+	if err != nil {
+		zap.L().Debug("failed to search filters", zap.String("op", op), zap.String("query", query), zap.Error(err))
+		c = http.StatusInternalServerError
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		return
+	}
+
+	utils.SuccessPaginatedResponse(w, c, res)
+}
+
+func (h *Handler) listCategoryFilters(w http.ResponseWriter, r *http.Request) {
+	s, c := time.Now(), http.StatusOK
+	const op = "category.listCategoryFilters.handler"
+	defer func() {
+		metrics.ObserveRequest(time.Since(s), c, op)
+	}()
+
+	res, err := h.ctrl.ListCategoryFilters(r.Context(), strings.TrimPrefix(r.URL.Path, "/api/category/filters/"))
+	if err != nil {
+		c = http.StatusInternalServerError
+		zap.L().Debug("failed to list category filters", zap.String("op", op), zap.Error(err))
+		utils.ErrResponse(w, c, ctrl.ErrInternalError)
+		return
+	}
+
+	utils.SuccessResponse(w, c, res)
 }
