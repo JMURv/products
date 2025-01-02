@@ -33,6 +33,7 @@ func (h *Handler) Start(port int) {
 	RegisterCategoryRoutes(mux, h)
 	RegisterPromotionRoutes(mux, h)
 	RegisterFavoriteRoutes(mux, h)
+	RegisterOrderRoutes(mux, h)
 	mux.HandleFunc(
 		"/api/health-check", func(w http.ResponseWriter, r *http.Request) {
 			utils.SuccessResponse(w, http.StatusOK, "OK")

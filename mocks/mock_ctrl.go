@@ -56,6 +56,20 @@ func (mr *MockCtrlMockRecorder) AddToFavorites(ctx, uid, itemID any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFavorites", reflect.TypeOf((*MockCtrl)(nil).AddToFavorites), ctx, uid, itemID)
 }
 
+// CancelOrder mocks base method.
+func (m *MockCtrl) CancelOrder(ctx context.Context, orderID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelOrder", ctx, orderID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelOrder indicates an expected call of CancelOrder.
+func (mr *MockCtrlMockRecorder) CancelOrder(ctx, orderID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOrder", reflect.TypeOf((*MockCtrl)(nil).CancelOrder), ctx, orderID)
+}
+
 // CategoryFiltersSearch mocks base method.
 func (m *MockCtrl) CategoryFiltersSearch(ctx context.Context, query string, page, size int) (*model.PaginatedFilterData, error) {
 	m.ctrl.T.Helper()
@@ -114,6 +128,21 @@ func (m *MockCtrl) CreateItem(ctx context.Context, i *model.Item) (uuid.UUID, er
 func (mr *MockCtrlMockRecorder) CreateItem(ctx, i any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateItem", reflect.TypeOf((*MockCtrl)(nil).CreateItem), ctx, i)
+}
+
+// CreateOrder mocks base method.
+func (m *MockCtrl) CreateOrder(ctx context.Context, uid uuid.UUID, req *model.Order) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrder", ctx, uid, req)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrder indicates an expected call of CreateOrder.
+func (mr *MockCtrlMockRecorder) CreateOrder(ctx, uid, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockCtrl)(nil).CreateOrder), ctx, uid, req)
 }
 
 // CreatePromotion mocks base method.
@@ -201,6 +230,21 @@ func (m *MockCtrl) GetItemByUUID(ctx context.Context, uid uuid.UUID) (*model.Ite
 func (mr *MockCtrlMockRecorder) GetItemByUUID(ctx, uid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemByUUID", reflect.TypeOf((*MockCtrl)(nil).GetItemByUUID), ctx, uid)
+}
+
+// GetOrder mocks base method.
+func (m *MockCtrl) GetOrder(ctx context.Context, orderID uint64) (*model.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrder", ctx, orderID)
+	ret0, _ := ret[0].(*model.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrder indicates an expected call of GetOrder.
+func (mr *MockCtrlMockRecorder) GetOrder(ctx, orderID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrder", reflect.TypeOf((*MockCtrl)(nil).GetOrder), ctx, orderID)
 }
 
 // GetPromotion mocks base method.
@@ -338,6 +382,21 @@ func (mr *MockCtrlMockRecorder) ListItemsByLabel(ctx, label, page, size any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListItemsByLabel", reflect.TypeOf((*MockCtrl)(nil).ListItemsByLabel), ctx, label, page, size)
 }
 
+// ListOrders mocks base method.
+func (m *MockCtrl) ListOrders(ctx context.Context, page, size int, filters map[string]any, sort string) (*model.PaginatedOrderData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListOrders", ctx, page, size, filters, sort)
+	ret0, _ := ret[0].(*model.PaginatedOrderData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListOrders indicates an expected call of ListOrders.
+func (mr *MockCtrlMockRecorder) ListOrders(ctx, page, size, filters, sort any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockCtrl)(nil).ListOrders), ctx, page, size, filters, sort)
+}
+
 // ListPromotionItems mocks base method.
 func (m *MockCtrl) ListPromotionItems(ctx context.Context, slug string, page, size int) (*model.PaginatedPromoItemsData, error) {
 	m.ctrl.T.Helper()
@@ -383,6 +442,21 @@ func (mr *MockCtrlMockRecorder) ListRelatedItems(ctx, uid any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelatedItems", reflect.TypeOf((*MockCtrl)(nil).ListRelatedItems), ctx, uid)
 }
 
+// ListUserOrders mocks base method.
+func (m *MockCtrl) ListUserOrders(ctx context.Context, uid uuid.UUID, page, size int) (*model.PaginatedOrderData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUserOrders", ctx, uid, page, size)
+	ret0, _ := ret[0].(*model.PaginatedOrderData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUserOrders indicates an expected call of ListUserOrders.
+func (mr *MockCtrlMockRecorder) ListUserOrders(ctx, uid, page, size any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserOrders", reflect.TypeOf((*MockCtrl)(nil).ListUserOrders), ctx, uid, page, size)
+}
+
 // PromotionSearch mocks base method.
 func (m *MockCtrl) PromotionSearch(ctx context.Context, query string, page, size int) (*model.PaginatedPromosData, error) {
 	m.ctrl.T.Helper()
@@ -396,21 +470,6 @@ func (m *MockCtrl) PromotionSearch(ctx context.Context, query string, page, size
 func (mr *MockCtrlMockRecorder) PromotionSearch(ctx, query, page, size any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PromotionSearch", reflect.TypeOf((*MockCtrl)(nil).PromotionSearch), ctx, query, page, size)
-}
-
-// RecItems mocks base method.
-func (m *MockCtrl) RecItems(ctx context.Context, page, size int) (*model.PaginatedItemsData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecItems", ctx, page, size)
-	ret0, _ := ret[0].(*model.PaginatedItemsData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RecItems indicates an expected call of RecItems.
-func (mr *MockCtrlMockRecorder) RecItems(ctx, page, size any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecItems", reflect.TypeOf((*MockCtrl)(nil).RecItems), ctx, page, size)
 }
 
 // RemoveFromFavorites mocks base method.
@@ -453,6 +512,20 @@ func (m *MockCtrl) UpdateItem(ctx context.Context, uid uuid.UUID, i *model.Item)
 func (mr *MockCtrlMockRecorder) UpdateItem(ctx, uid, i any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItem", reflect.TypeOf((*MockCtrl)(nil).UpdateItem), ctx, uid, i)
+}
+
+// UpdateOrder mocks base method.
+func (m *MockCtrl) UpdateOrder(ctx context.Context, orderID uint64, newData *model.Order) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrder", ctx, orderID, newData)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrder indicates an expected call of UpdateOrder.
+func (mr *MockCtrlMockRecorder) UpdateOrder(ctx, orderID, newData any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrder", reflect.TypeOf((*MockCtrl)(nil).UpdateOrder), ctx, orderID, newData)
 }
 
 // UpdatePromotion mocks base method.

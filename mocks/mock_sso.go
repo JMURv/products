@@ -39,6 +39,21 @@ func (m *MockSSOSvc) EXPECT() *MockSSOSvcMockRecorder {
 	return m.recorder
 }
 
+// CreateUser mocks base method.
+func (m *MockSSOSvc) CreateUser(ctx context.Context, name, email, password string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", ctx, name, email, password)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockSSOSvcMockRecorder) CreateUser(ctx, name, email, password any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockSSOSvc)(nil).CreateUser), ctx, name, email, password)
+}
+
 // ParseClaims mocks base method.
 func (m *MockSSOSvc) ParseClaims(ctx context.Context, token string) (string, error) {
 	m.ctrl.T.Helper()

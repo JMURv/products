@@ -10,6 +10,7 @@ type AppRepo interface {
 	categoryRepo
 	promotionRepo
 	favoriteRepo
+	orderRepo
 }
 
 type Discovery interface {

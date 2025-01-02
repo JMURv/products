@@ -15,13 +15,6 @@ db:
   password: "password"
   database: "par_pro_products_db"
 
-testDB:
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "password"
-  database: "par_pro_products_db_test"
-
 redis:
   addr: "localhost:6379"
   pass: ""

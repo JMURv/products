@@ -40,7 +40,7 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.listCategories(w, r)
 			case http.MethodPost:
-				mid.ApplyMiddleware(h.createCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.createCategory, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
@@ -53,9 +53,9 @@ func RegisterCategoryRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.getCategory(w, r)
 			case http.MethodPut:
-				mid.ApplyMiddleware(h.updateCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.updateCategory, h.authMiddleware)(w, r)
 			case http.MethodDelete:
-				mid.ApplyMiddleware(h.deleteCategory, h.authMiddleware)
+				mid.ApplyMiddleware(h.deleteCategory, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
@@ -192,7 +192,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		metrics.ObserveRequest(time.Since(s), c, op)
 	}()
-
+	
 	req := &model.Category{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		c = http.StatusBadRequest

@@ -100,22 +100,6 @@ CREATE TABLE IF NOT EXISTS "related_product" (
     CONSTRAINT fk_related_item FOREIGN KEY (related_item_id) REFERENCES item (id) ON DELETE CASCADE
 );
 
--- cart
-CREATE TABLE IF NOT EXISTS "cart" (
-    id      SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS "cart_item" (
-    id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    quantity INTEGER NOT NULL,
-
-    cart_id  BIGINT  NOT NULL,
-    item_id  UUID    NOT NULL,
-    CONSTRAINT fk_cart FOREIGN KEY (cart_id) REFERENCES cart (id) ON DELETE CASCADE,
-    CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES item (id) ON DELETE CASCADE
-);
-
 -- orders
 CREATE TABLE IF NOT EXISTS "order" (
     id             SERIAL PRIMARY KEY,
@@ -137,7 +121,6 @@ CREATE TABLE IF NOT EXISTS "order" (
 CREATE TABLE IF NOT EXISTS "order_item" (
     id         SERIAL PRIMARY KEY,
     quantity   INTEGER        NOT NULL,
-    price      DECIMAL(10, 2) NOT NULL,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

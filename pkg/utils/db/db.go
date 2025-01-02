@@ -88,22 +88,27 @@ func FilterItems(q *strings.Builder, args []any, filters map[string]any) []any {
 	return args
 }
 
-//func FilterOrders(query *gorm.DB, filters map[string]any) *gorm.DB {
-//	for key, value := range filters {
-//		switch key {
-//		case "min_price":
-//			query = query.Where("total_amount >= ?", value)
-//			continue
-//		case "max_price":
-//			query = query.Where("total_amount <= ?", value)
-//			continue
-//		}
-//
-//		switch v := value.(type) {
-//		case []string:
-//			query = query.Where(key+" IN (?)", v)
-//		}
-//
-//	}
-//	return query
-//}
+func FilterOrders(q *strings.Builder, args []any, filters map[string]any) []any {
+	for key, value := range filters {
+		switch key {
+		case "min_price":
+			q.WriteString(" AND total_amount >= ?")
+			args = append(args, value)
+		case "max_price":
+			q.WriteString(" AND total_amount <= ?")
+			args = append(args, value)
+		}
+
+		switch v := value.(type) {
+		case []string:
+			q.WriteString(" AND " + key + " IN (")
+			placeholders := make([]string, len(v))
+			for i := range v {
+				placeholders[i] = "?"
+				args = append(args, v[i])
+			}
+			q.WriteString(strings.Join(placeholders, ", ") + ")")
+		}
+	}
+	return args
+}

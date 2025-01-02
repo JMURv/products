@@ -25,6 +25,14 @@ const (
 	PaymentMethodOther PaymentMethod = "расчетный счет компании"
 )
 
+type PaginatedOrderData struct {
+	Data        []*Order `json:"data"`
+	Count       int64    `json:"count"`
+	TotalPages  int      `json:"total_pages"`
+	CurrentPage int      `json:"current_page"`
+	HasNextPage bool     `json:"has_next_page"`
+}
+
 type Order struct {
 	ID          uint64  `json:"id" gorm:"primaryKey;autoIncrement"`
 	Status      string  `json:"status" gorm:"not null"`

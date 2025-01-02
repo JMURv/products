@@ -11,13 +11,20 @@ tasks:
     cmds:
       - "protoc --go_out=. --go-grpc_out=. --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative api/pb/products.proto"
 
+  mocks:
+    desc: Generate mocks
+    cmds:
+      - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
+      - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
+      - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
+
+
   t:
     desc: Run tests
     cmds:
       - "task t-hdl"
       - "task t-ctrl"
       - "task t-repo"
-
 
   t-hdl:
     desc: Test handlers
@@ -53,10 +60,3 @@ tasks:
       - "go test ./internal/repo/db"
       - "go test -coverprofile=cov_repo.out ./internal/repo/db && go tool cover -func=cov_repo.out"
       #- "go test -coverprofile=cov_repo.out ./internal/repo/db && go tool cover -html=cov_repo.out"
-
-  mocks:
-    desc: Generate mocks
-    cmds:
-      - mockgen -source="./internal/hdl/interfaces.go" -destination="mocks/mock_ctrl.go" -package=mocks
-      - mockgen -source="./internal/ctrl/ctrl.go" -destination="mocks/mock_repos.go" -package=mocks
-      - mockgen -source="./internal/ctrl/sso/sso.go" -destination="mocks/mock_sso.go" -package=mocks
