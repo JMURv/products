@@ -28,9 +28,13 @@ func RegisterOrderRoutes(mux *http.ServeMux, h *Handler) {
 		"/api/order", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				mid.ApplyMiddleware(h.listOrders, h.authMiddleware)(w, r)
+				mid.ApplyMiddleware(
+					h.listOrders, h.authMiddleware,
+				)(w, r)
 			case http.MethodPost:
-				mid.ApplyMiddleware(h.createOrder)(w, r)
+				mid.ApplyMiddleware(
+					h.createOrder,
+				)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}

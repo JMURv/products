@@ -309,6 +309,7 @@ func (h *Handler) ListCategoryItems(ctx context.Context, req *pb.ListCategoryIte
 		return nil, status.Errorf(c, ctrl.ErrDecodeRequest.Error())
 	}
 
+	// TODO: Parse filters
 	filters := make(map[string]any)
 	res, err := h.ctrl.ListCategoryItems(ctx, req.CategorySlug, int(req.Page), int(req.Size), filters, req.Sort)
 	if err != nil && errors.Is(err, ctrl.ErrNotFound) {

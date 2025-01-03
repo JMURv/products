@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func createOrderItem(tx *sql.Tx, orderID uint64, req *model.OrderItem) error {
+func createOrderItem(tx *sql.Tx, orderID uint64, req model.OrderItem) error {
 	if _, err := tx.Exec(
 		orderItemCreateQ,
 		orderID,
@@ -21,7 +21,7 @@ func createOrderItem(tx *sql.Tx, orderID uint64, req *model.OrderItem) error {
 	return nil
 }
 
-func UpdateOrderItems(tx *sql.Tx, orderID uint64, req []*model.OrderItem) error {
+func UpdateOrderItems(tx *sql.Tx, orderID uint64, req []model.OrderItem) error {
 	rows, err := tx.Query(orderItemListQ, orderID)
 	if err != nil {
 		return err

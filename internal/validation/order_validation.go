@@ -4,7 +4,7 @@ import (
 	"github.com/JMURv/par-pro/products/pkg/model"
 )
 
-func OrderValidation(o *model.Order) error {
+func Order(o *model.Order) error {
 	if o.FIO == "" {
 		return ErrMissingFIO
 	}

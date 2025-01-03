@@ -8,6 +8,7 @@ import "google/protobuf/timestamp.proto";
 message Empty {}
 message uuidMsg {string uuid = 1;}
 message slugMsg {string slug = 1;}
+message uint64Msg {uint64 value = 1;}
 
 message ListReq {
   uint64 page = 1;
@@ -266,4 +267,47 @@ message ListPromotionItemsReq {
   string slug = 1;
   uint32 page = 2;
   uint32 size = 3;
+}
+
+service Order {
+  rpc ListOrders (ListReq) returns (PaginatedOrderRes);
+  rpc ListUserOrders (ListReq) returns (PaginatedOrderRes);
+  rpc GetOrder (uint64Msg) returns (OrderMsg);
+  rpc CreateOrder (OrderMsg) returns (uint64Msg);
+  rpc UpdateOrder (OrderMsg) returns (Empty);
+  rpc CancelOrder (uint64Msg) returns (Empty);
+}
+
+message OrderMsg {
+  uint64 id = 1;
+  string status = 2;
+  float total = 3;
+  string fio = 4;
+  string tel = 5;
+  string email = 6;
+  string address = 7;
+  string delivery = 8;
+  string payment_method = 9;
+  string user_id = 10;
+  repeated OrderItem items = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message OrderItem {
+  uint64 id = 1;
+  uint32 quantity = 2;
+  uint64 order_id = 3;
+  string item_id = 4;
+  ItemMsg item = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message PaginatedOrderRes {
+  repeated OrderMsg data = 1;
+  int64 count = 2;
+  int64 total_pages = 3;
+  int64 current_page = 4;
+  bool has_next_page = 5;
 }

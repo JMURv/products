@@ -54,12 +54,13 @@ const orderUpdateQ = `
 UPDATE "order"
 SET status=$1, total_amount=$2, fio=$3, tel=$4, email=$5, address=$6, delivery=$7, payment_method=$8, updated_at=NOW()
 WHERE id=$9
-
 `
 
 const orderItemListQ = `
 SELECT
-	ARRAY_AGG(oi.id || '|' || oi.item_id || '|' || oi.quantity) AS order_items
+	oi.id,
+	oi.item_id,
+	oi.quantity
 FROM "order_item" oi
 WHERE oi.order_id=$1
 `

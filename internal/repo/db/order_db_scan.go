@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-func ScanOrderItems(orderItems []string) ([]model.OrderItem, error) {
-	items := make([]model.OrderItem, 0, len(orderItems))
+func ScanOrderItems(orderItems []string) ([]*model.OrderItem, error) {
+	items := make([]*model.OrderItem, 0, len(orderItems))
 
 	for i := 0; i < len(orderItems); i++ {
 		parts := strings.Split(orderItems[i], "|")
@@ -27,13 +27,13 @@ func ScanOrderItems(orderItems []string) ([]model.OrderItem, error) {
 			return nil, err
 		}
 
-		quantity, err := strconv.Atoi(parts[1])
+		quantity, err := strconv.Atoi(parts[2])
 		if err != nil {
 			return nil, err
 		}
 
 		items = append(
-			items, model.OrderItem{
+			items, &model.OrderItem{
 				ID:       id,
 				ItemID:   itemID,
 				Quantity: quantity,

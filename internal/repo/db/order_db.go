@@ -340,10 +340,12 @@ func (r *Repository) CancelOrder(ctx context.Context, orderID uint64) error {
 
 	res, err := tx.Exec(orderCancelQ, model.OrderStatusCancelled, orderID)
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	if eff, _ := res.RowsAffected(); eff == 0 {
+		tx.Rollback()
 		return repo.ErrNotFound
 	}
 

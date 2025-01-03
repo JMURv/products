@@ -35,7 +35,7 @@ func RegisterPromotionRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.listPromotions(w, r)
 			case http.MethodPost:
-				mid.ApplyMiddleware(h.createPromotion, h.authMiddleware)
+				mid.ApplyMiddleware(h.createPromotion, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}
@@ -48,9 +48,9 @@ func RegisterPromotionRoutes(mux *http.ServeMux, h *Handler) {
 			case http.MethodGet:
 				h.getPromotion(w, r)
 			case http.MethodPut:
-				mid.ApplyMiddleware(h.updatePromotion, h.authMiddleware)
+				mid.ApplyMiddleware(h.updatePromotion, h.authMiddleware)(w, r)
 			case http.MethodDelete:
-				mid.ApplyMiddleware(h.deletePromotion, h.authMiddleware)
+				mid.ApplyMiddleware(h.deletePromotion, h.authMiddleware)(w, r)
 			default:
 				utils.ErrResponse(w, http.StatusMethodNotAllowed, mid.ErrMethodNotAllowed)
 			}

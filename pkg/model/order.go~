@@ -45,7 +45,7 @@ type Order struct {
 	Delivery      string `json:"delivery" gorm:"type:varchar(255);not null"`
 	PaymentMethod string `json:"payment_method" gorm:"type:varchar(255);not null"`
 
-	UserID     uuid.UUID    `json:"user_id" gorm:"not null"`
+	UserID     uuid.UUID   `json:"user_id" gorm:"not null"`
 	OrderItems []*OrderItem `json:"order_items" gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`

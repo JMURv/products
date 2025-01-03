@@ -21,6 +21,7 @@ type Handler struct {
 	pb.CategoryServer
 	pb.PromotionServer
 	pb.FavoriteServer
+	pb.OrderServer
 	srv  *grpc.Server
 	hsrv *health.Server
 	ctrl hdl.Ctrl
@@ -54,6 +55,7 @@ func (h *Handler) Start(port int) {
 	pb.RegisterCategoryServer(h.srv, h)
 	pb.RegisterPromotionServer(h.srv, h)
 	pb.RegisterFavoriteServer(h.srv, h)
+	pb.RegisterOrderServer(h.srv, h)
 	grpc_health_v1.RegisterHealthServer(h.srv, h.hsrv)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", port))

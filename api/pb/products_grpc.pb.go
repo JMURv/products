@@ -1337,3 +1337,295 @@ var Promotion_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "api/pb/products.proto",
 }
+
+const (
+	Order_ListOrders_FullMethodName     = "/user.Order/ListOrders"
+	Order_ListUserOrders_FullMethodName = "/user.Order/ListUserOrders"
+	Order_GetOrder_FullMethodName       = "/user.Order/GetOrder"
+	Order_CreateOrder_FullMethodName    = "/user.Order/CreateOrder"
+	Order_UpdateOrder_FullMethodName    = "/user.Order/UpdateOrder"
+	Order_CancelOrder_FullMethodName    = "/user.Order/CancelOrder"
+)
+
+// OrderClient is the client API for Order service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type OrderClient interface {
+	ListOrders(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedOrderRes, error)
+	ListUserOrders(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedOrderRes, error)
+	GetOrder(ctx context.Context, in *Uint64Msg, opts ...grpc.CallOption) (*OrderMsg, error)
+	CreateOrder(ctx context.Context, in *OrderMsg, opts ...grpc.CallOption) (*Uint64Msg, error)
+	UpdateOrder(ctx context.Context, in *OrderMsg, opts ...grpc.CallOption) (*Empty, error)
+	CancelOrder(ctx context.Context, in *Uint64Msg, opts ...grpc.CallOption) (*Empty, error)
+}
+
+type orderClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewOrderClient(cc grpc.ClientConnInterface) OrderClient {
+	return &orderClient{cc}
+}
+
+func (c *orderClient) ListOrders(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedOrderRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PaginatedOrderRes)
+	err := c.cc.Invoke(ctx, Order_ListOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderClient) ListUserOrders(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*PaginatedOrderRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PaginatedOrderRes)
+	err := c.cc.Invoke(ctx, Order_ListUserOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderClient) GetOrder(ctx context.Context, in *Uint64Msg, opts ...grpc.CallOption) (*OrderMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OrderMsg)
+	err := c.cc.Invoke(ctx, Order_GetOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderClient) CreateOrder(ctx context.Context, in *OrderMsg, opts ...grpc.CallOption) (*Uint64Msg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Uint64Msg)
+	err := c.cc.Invoke(ctx, Order_CreateOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderClient) UpdateOrder(ctx context.Context, in *OrderMsg, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Order_UpdateOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderClient) CancelOrder(ctx context.Context, in *Uint64Msg, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Order_CancelOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// OrderServer is the server API for Order service.
+// All implementations must embed UnimplementedOrderServer
+// for forward compatibility.
+type OrderServer interface {
+	ListOrders(context.Context, *ListReq) (*PaginatedOrderRes, error)
+	ListUserOrders(context.Context, *ListReq) (*PaginatedOrderRes, error)
+	GetOrder(context.Context, *Uint64Msg) (*OrderMsg, error)
+	CreateOrder(context.Context, *OrderMsg) (*Uint64Msg, error)
+	UpdateOrder(context.Context, *OrderMsg) (*Empty, error)
+	CancelOrder(context.Context, *Uint64Msg) (*Empty, error)
+	mustEmbedUnimplementedOrderServer()
+}
+
+// UnimplementedOrderServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedOrderServer struct{}
+
+func (UnimplementedOrderServer) ListOrders(context.Context, *ListReq) (*PaginatedOrderRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrders not implemented")
+}
+func (UnimplementedOrderServer) ListUserOrders(context.Context, *ListReq) (*PaginatedOrderRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserOrders not implemented")
+}
+func (UnimplementedOrderServer) GetOrder(context.Context, *Uint64Msg) (*OrderMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrder not implemented")
+}
+func (UnimplementedOrderServer) CreateOrder(context.Context, *OrderMsg) (*Uint64Msg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateOrder not implemented")
+}
+func (UnimplementedOrderServer) UpdateOrder(context.Context, *OrderMsg) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrder not implemented")
+}
+func (UnimplementedOrderServer) CancelOrder(context.Context, *Uint64Msg) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelOrder not implemented")
+}
+func (UnimplementedOrderServer) mustEmbedUnimplementedOrderServer() {}
+func (UnimplementedOrderServer) testEmbeddedByValue()               {}
+
+// UnsafeOrderServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to OrderServer will
+// result in compilation errors.
+type UnsafeOrderServer interface {
+	mustEmbedUnimplementedOrderServer()
+}
+
+func RegisterOrderServer(s grpc.ServiceRegistrar, srv OrderServer) {
+	// If the following call pancis, it indicates UnimplementedOrderServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&Order_ServiceDesc, srv)
+}
+
+func _Order_ListOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).ListOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_ListOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).ListOrders(ctx, req.(*ListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Order_ListUserOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).ListUserOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_ListUserOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).ListUserOrders(ctx, req.(*ListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Order_GetOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Uint64Msg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).GetOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_GetOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).GetOrder(ctx, req.(*Uint64Msg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Order_CreateOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrderMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).CreateOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_CreateOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).CreateOrder(ctx, req.(*OrderMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Order_UpdateOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrderMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).UpdateOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_UpdateOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).UpdateOrder(ctx, req.(*OrderMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Order_CancelOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Uint64Msg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServer).CancelOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Order_CancelOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServer).CancelOrder(ctx, req.(*Uint64Msg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Order_ServiceDesc is the grpc.ServiceDesc for Order service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Order_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "user.Order",
+	HandlerType: (*OrderServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListOrders",
+			Handler:    _Order_ListOrders_Handler,
+		},
+		{
+			MethodName: "ListUserOrders",
+			Handler:    _Order_ListUserOrders_Handler,
+		},
+		{
+			MethodName: "GetOrder",
+			Handler:    _Order_GetOrder_Handler,
+		},
+		{
+			MethodName: "CreateOrder",
+			Handler:    _Order_CreateOrder_Handler,
+		},
+		{
+			MethodName: "UpdateOrder",
+			Handler:    _Order_UpdateOrder_Handler,
+		},
+		{
+			MethodName: "CancelOrder",
+			Handler:    _Order_CancelOrder_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api/pb/products.proto",
+}

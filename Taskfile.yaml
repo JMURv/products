@@ -36,6 +36,12 @@ tasks:
       - "go test -coverprofile=cov_grpc.out ./internal/hdl/grpc && go tool cover -func=cov_grpc.out"
       - "go test -coverprofile=cov_grpc.out ./internal/hdl/grpc && go tool cover -html=cov_grpc.out"
 
+  t-http:
+    desc: Test http handlers
+    cmds:
+      - "go test ./internal/hdl/http"
+      - "go test -coverprofile=cov_http.out ./internal/hdl/http && go tool cover -func=cov_http.out"
+
   t-grpc:
     desc: Test grpc handlers
     cmds:
