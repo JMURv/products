@@ -6,7 +6,7 @@ import (
 	"github.com/JMURv/par-pro/products/internal/cache/redis"
 	ctrl "github.com/JMURv/par-pro/products/internal/ctrl"
 	sso_ctrl_grpc "github.com/JMURv/par-pro/products/internal/ctrl/sso"
-	"github.com/JMURv/par-pro/products/internal/discovery/JMURv"
+	discovery "github.com/JMURv/par-pro/products/internal/discovery/JMURv/grpc"
 	//handler "github.com/JMURv/par-pro/products/internal/handler/http"
 	handler "github.com/JMURv/par-pro/products/internal/hdl/http"
 	tracing "github.com/JMURv/par-pro/products/internal/metrics/jaeger"
@@ -45,13 +45,8 @@ func main() {
 	go metrics.New(conf.Server.Port + 5).Start(ctx)
 	go tracing.Start(ctx, conf.ServiceName, conf.Jaeger)
 
-	dsc := discovery.New(
-		conf.SrvDiscovery.URL,
-		conf.ServiceName,
-		fmt.Sprintf("%v://%v:%v", conf.Server.Scheme, conf.Server.Domain, conf.Server.Port),
-	)
-
-	if err := dsc.Register(); err != nil {
+	dsc := discovery.New(conf.SrvDiscovery, conf.ServiceName, conf.Server)
+	if err := dsc.Register(ctx); err != nil {
 		zap.L().Fatal("Error registering service", zap.Error(err))
 	}
 
@@ -69,15 +64,15 @@ func main() {
 
 		zap.L().Info("Shutting down gracefully...")
 
-		cancel()
 		cache.Close()
-		if err := dsc.Deregister(); err != nil {
+		if err := dsc.Deregister(ctx); err != nil {
 			zap.L().Debug("Error deregistering service", zap.Error(err))
 		}
 		if err := h.Close(); err != nil {
 			zap.L().Debug("Error closing handler", zap.Error(err))
 		}
 
+		cancel()
 		os.Exit(0)
 	}()
 

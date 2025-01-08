@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/JMURv/par-pro/products/internal/discovery"
+	"github.com/JMURv/sso/internal/discovery"
+	conf "github.com/JMURv/sso/pkg/config"
 	"github.com/goccy/go-json"
+	"log"
 	"net/http"
 )
 
@@ -28,15 +30,19 @@ type Discovery struct {
 	addr string
 }
 
-func New(url, name, addr string) *Discovery {
+func New(url *conf.SrvDiscoveryConfig, name string, addr *conf.ServerConfig) discovery.ServiceDiscovery {
 	return &Discovery{
-		url:  url,
+		url:  fmt.Sprintf("%v://%v:%v", url.Scheme, url.Host, url.Port),
 		name: name,
-		addr: addr,
+		addr: fmt.Sprintf("%v://%v:%v", addr.Scheme, addr.Domain, addr.Port),
 	}
 }
 
-func (d *Discovery) Register() error {
+func (d *Discovery) Close() error {
+	return nil
+}
+
+func (d *Discovery) Register(_ context.Context) error {
 	req, err := json.Marshal(registerRequest{Name: d.name, Address: d.addr})
 	if err != nil {
 		return err
@@ -47,14 +53,15 @@ func (d *Discovery) Register() error {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusCreated {
+		log.Println(res.StatusCode)
 		return discovery.ErrFailedToRegister
 	}
 
 	return nil
 }
 
-func (d *Discovery) Deregister() error {
+func (d *Discovery) Deregister(_ context.Context) error {
 	req, err := json.Marshal(registerRequest{Name: d.name, Address: d.addr})
 	if err != nil {
 		return err
@@ -72,7 +79,7 @@ func (d *Discovery) Deregister() error {
 	return nil
 }
 
-func (d *Discovery) FindServiceByName(ctx context.Context, name string) (string, error) {
+func (d *Discovery) FindServiceByName(_ context.Context, name string) (string, error) {
 	req, err := json.Marshal(findRequest{Name: name})
 	if err != nil {
 		return "", err

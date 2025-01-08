@@ -3,7 +3,7 @@ package sso
 import (
 	"context"
 	"errors"
-	"github.com/JMURv/par-pro/products/internal/discovery/JMURv"
+	discovery "github.com/JMURv/par-pro/products/internal/discovery"
 	pb "github.com/JMURv/protos/par-pro"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -20,10 +20,10 @@ type SSOSvc interface {
 }
 
 type SSO struct {
-	discovery *discovery.Discovery
+	discovery discovery.ServiceDiscovery
 }
 
-func New(discovery *discovery.Discovery) *SSO {
+func New(discovery discovery.ServiceDiscovery) *SSO {
 	return &SSO{
 		discovery: discovery,
 	}
