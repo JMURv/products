@@ -46,7 +46,7 @@ func main() {
 
 	dsc := discovery.New(conf.SrvDiscovery, conf.ServiceName, conf.Server)
 	if err := dsc.Register(ctx); err != nil {
-		zap.L().Fatal("Error registering service", zap.Error(err))
+		zap.L().Warn("Error registering service", zap.Error(err))
 	}
 
 	cache := redis.New(conf.Redis)
@@ -62,11 +62,11 @@ func main() {
 		<-c
 
 		zap.L().Info("Shutting down gracefully...")
-
-		cache.Close()
 		if err := dsc.Deregister(ctx); err != nil {
 			zap.L().Debug("Error deregistering service", zap.Error(err))
 		}
+
+		cache.Close()
 		if err := h.Close(); err != nil {
 			zap.L().Debug("Error closing handler", zap.Error(err))
 		}
