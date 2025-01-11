@@ -35,7 +35,7 @@ func (h *Handler) Start(port int) {
 	RegisterFavoriteRoutes(mux, h)
 	RegisterOrderRoutes(mux, h)
 	mux.HandleFunc(
-		"/api/health-check", func(w http.ResponseWriter, r *http.Request) {
+		"/health-check", func(w http.ResponseWriter, r *http.Request) {
 			utils.SuccessResponse(w, http.StatusOK, "OK")
 		},
 	)
