@@ -60,7 +60,7 @@ message ItemMsg {
   string title = 3;
   string description = 4;
   float price = 5;
-  uint32 quantity_in_stock = 6;
+  uint64 quantity_in_stock = 6;
   string src = 7;
   string alt = 8;
   bool in_stock = 9;
@@ -120,14 +120,14 @@ service Item {
 }
 
 message ListItemsByLabelReq {
-  uint32 page = 1;
-  uint32 size = 2;
+  uint64 page = 1;
+  uint64 size = 2;
   string label = 3;
 }
 
 message listCategoryItemsReq {
-  uint32 page = 1;
-  uint32 size = 2;
+  uint64 page = 1;
+  uint64 size = 2;
   string sort = 3;
   string category_slug = 4;
 }
@@ -143,17 +143,17 @@ message ItemWithUid {
 
 message PaginatedItemRes {
   repeated ItemMsg data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
 message PaginatedItemAttrsRes {
   repeated ItemAttribute data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
@@ -170,9 +170,9 @@ service Category {
 
 message PaginatedCategoryRes {
   repeated CategoryMsg data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
@@ -182,9 +182,9 @@ message FilterListRes {
 
 message PaginatedFilterRes {
   repeated Filter data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
@@ -239,7 +239,7 @@ message PromoWithSlug {
 
 message PromoItem {
   uint64 id = 1;
-  uint32 discount = 2;
+  uint64 discount = 2;
   string promotion_slug = 3;
   string item_id = 4;
   ItemMsg item = 5;
@@ -249,33 +249,39 @@ message PromoItem {
 
 message PaginatedPromoRes {
   repeated PromoMsg data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
 message PaginatedPromoItemsRes {
   repeated PromoItem data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
 
 message ListPromotionItemsReq {
   string slug = 1;
-  uint32 page = 2;
-  uint32 size = 3;
+  uint64 page = 2;
+  uint64 size = 3;
 }
 
 service Order {
   rpc ListOrders (ListReq) returns (PaginatedOrderRes);
-  rpc ListUserOrders (ListReq) returns (PaginatedOrderRes);
+  rpc ListUserOrders (ListUserOrdersReq) returns (PaginatedOrderRes);
   rpc GetOrder (uint64Msg) returns (OrderMsg);
   rpc CreateOrder (OrderMsg) returns (uint64Msg);
   rpc UpdateOrder (OrderMsg) returns (Empty);
   rpc CancelOrder (uint64Msg) returns (Empty);
+}
+
+message ListUserOrdersReq {
+  string user_id = 1;
+  uint64 page = 2;
+  uint64 size = 3;
 }
 
 message OrderMsg {
@@ -296,7 +302,7 @@ message OrderMsg {
 
 message OrderItem {
   uint64 id = 1;
-  uint32 quantity = 2;
+  uint64 quantity = 2;
   uint64 order_id = 3;
   string item_id = 4;
   ItemMsg item = 5;
@@ -306,8 +312,8 @@ message OrderItem {
 
 message PaginatedOrderRes {
   repeated OrderMsg data = 1;
-  int64 count = 2;
-  int64 total_pages = 3;
-  int64 current_page = 4;
+  uint64 count = 2;
+  uint64 total_pages = 3;
+  uint64 current_page = 4;
   bool has_next_page = 5;
 }
